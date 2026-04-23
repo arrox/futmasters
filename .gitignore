@@ -5,6 +5,11 @@ __pycache__/
 .pytest_cache/
 backend/fc26_sorteo.db
 backend/*.db
+backend/.env*
+backend/media/
+backend/logs/
+
+# IMPORTANT: nunca committear .env* con secretos (ADMIN_PASSWORD, etc.)
 
 # Node / Vite
 frontend/node_modules/

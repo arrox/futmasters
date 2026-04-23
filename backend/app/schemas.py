@@ -125,3 +125,128 @@ class SorteoListResponse(BaseModel):
     limit: int
     offset: int
     items: List[SorteoListItem]
+
+
+# ──────────────────────────────────────────────────────────────
+# Torneos
+# ──────────────────────────────────────────────────────────────
+TournamentFormat = Literal["groups_knockout", "league"]
+TournamentStatus = Literal["draft", "groups", "knockout", "finished"]
+MatchStage = Literal[
+    "group", "league", "round_of_16", "quarter", "semi", "final", "third_place"
+]
+MatchStatus = Literal["scheduled", "played"]
+
+
+class TournamentCreate(BaseModel):
+    name: str = Field(min_length=1, max_length=80)
+    sorteo_id: Optional[str] = None
+    format: TournamentFormat = "groups_knockout"
+    num_groups: int = Field(default=4, ge=1, le=8)
+    qualify_per_group: int = Field(default=2, ge=1, le=8)
+    points_win: int = 3
+    points_draw: int = 1
+    points_loss: int = 0
+    double_round: bool = False
+
+
+class TournamentUpdate(BaseModel):
+    name: Optional[str] = None
+    num_groups: Optional[int] = None
+    qualify_per_group: Optional[int] = None
+    points_win: Optional[int] = None
+    points_draw: Optional[int] = None
+    points_loss: Optional[int] = None
+    double_round: Optional[bool] = None
+
+
+class TournamentOut(BaseModel):
+    id: str
+    name: str
+    sorteo_id: Optional[str]
+    format: TournamentFormat
+    status: TournamentStatus
+    num_groups: int
+    qualify_per_group: int
+    points_win: int
+    points_draw: int
+    points_loss: int
+    double_round: bool
+    created_at: str
+
+
+class PlayerOut(BaseModel):
+    id: int
+    tournament_id: str
+    display_name: str
+    team_name: str
+    team_type: Literal["club", "nation"]
+    team_ovr: int
+    team_att: int
+    team_mid: int
+    team_def: int
+    bombo: int
+    pick_order: int
+    group_label: Optional[str]
+    photo_filename: Optional[str]
+
+
+class PlayerUpdate(BaseModel):
+    display_name: Optional[str] = Field(default=None, min_length=1, max_length=50)
+    group_label: Optional[str] = None
+
+
+class MatchOut(BaseModel):
+    id: int
+    tournament_id: str
+    stage: MatchStage
+    round_number: int
+    group_label: Optional[str]
+    home_player_id: Optional[int]
+    away_player_id: Optional[int]
+    home_score: Optional[int]
+    away_score: Optional[int]
+    status: MatchStatus
+    played_at: Optional[str]
+    slot_home: Optional[str]
+    slot_away: Optional[str]
+    bracket_position: Optional[int]
+
+
+class MatchResultIn(BaseModel):
+    home_score: int = Field(ge=0, le=99)
+    away_score: int = Field(ge=0, le=99)
+
+
+class StandingRow(BaseModel):
+    player_id: int
+    display_name: str
+    team_name: str
+    team_ovr: int
+    photo_filename: Optional[str]
+    group_label: Optional[str]
+    group_position: int
+    pj: int
+    pg: int
+    pe: int
+    pp: int
+    gf: int
+    gc: int
+    dif: int
+    pts: int
+
+
+class TournamentDetail(BaseModel):
+    tournament: TournamentOut
+    players: List[PlayerOut]
+    matches: List[MatchOut]
+    standings: List[StandingRow]
+
+
+class AdminLoginRequest(BaseModel):
+    password: str
+
+
+class AdminLoginResponse(BaseModel):
+    token: str
+    configured: bool

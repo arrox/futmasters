@@ -45,10 +45,10 @@ def get_conn() -> Iterator[sqlite3.Connection]:
 
 
 def init_db() -> None:
-    """Crea la tabla ``sorteos`` si no existe."""
+    """Crea las tablas si no existen."""
     with _init_lock:
         with get_conn() as conn:
-            conn.execute(
+            conn.executescript(
                 """
                 CREATE TABLE IF NOT EXISTS sorteos (
                     id TEXT PRIMARY KEY,
@@ -59,11 +59,71 @@ def init_db() -> None:
                     hash TEXT NOT NULL,
                     payload_json TEXT NOT NULL,
                     full_result_json TEXT NOT NULL
-                )
+                );
+                CREATE INDEX IF NOT EXISTS idx_sorteos_timestamp
+                    ON sorteos(timestamp DESC);
+
+                CREATE TABLE IF NOT EXISTS tournaments (
+                    id TEXT PRIMARY KEY,
+                    name TEXT NOT NULL,
+                    sorteo_id TEXT,
+                    format TEXT NOT NULL,  -- 'groups_knockout' | 'league'
+                    status TEXT NOT NULL,  -- 'draft'|'groups'|'knockout'|'finished'
+                    num_groups INTEGER NOT NULL DEFAULT 0,
+                    qualify_per_group INTEGER NOT NULL DEFAULT 0,
+                    points_win INTEGER NOT NULL DEFAULT 3,
+                    points_draw INTEGER NOT NULL DEFAULT 1,
+                    points_loss INTEGER NOT NULL DEFAULT 0,
+                    double_round INTEGER NOT NULL DEFAULT 0,
+                    created_at TEXT NOT NULL,
+                    FOREIGN KEY(sorteo_id) REFERENCES sorteos(id)
+                );
+                CREATE INDEX IF NOT EXISTS idx_tournaments_created
+                    ON tournaments(created_at DESC);
+
+                CREATE TABLE IF NOT EXISTS players (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    tournament_id TEXT NOT NULL,
+                    display_name TEXT NOT NULL,
+                    team_name TEXT NOT NULL,
+                    team_type TEXT NOT NULL,
+                    team_ovr INTEGER NOT NULL,
+                    team_att INTEGER NOT NULL,
+                    team_mid INTEGER NOT NULL,
+                    team_def INTEGER NOT NULL,
+                    bombo INTEGER NOT NULL,
+                    pick_order INTEGER NOT NULL,
+                    group_label TEXT,
+                    photo_filename TEXT,
+                    FOREIGN KEY(tournament_id) REFERENCES tournaments(id) ON DELETE CASCADE
+                );
+                CREATE INDEX IF NOT EXISTS idx_players_tournament
+                    ON players(tournament_id);
+
+                CREATE TABLE IF NOT EXISTS matches (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    tournament_id TEXT NOT NULL,
+                    stage TEXT NOT NULL,  -- 'group'|'round_of_16'|'quarter'|'semi'|'final'|'third_place'
+                    round_number INTEGER NOT NULL DEFAULT 0,
+                    group_label TEXT,
+                    home_player_id INTEGER,
+                    away_player_id INTEGER,
+                    home_score INTEGER,
+                    away_score INTEGER,
+                    status TEXT NOT NULL DEFAULT 'scheduled',  -- 'scheduled'|'played'
+                    played_at TEXT,
+                    slot_home TEXT,  -- para bracket: ganador de match_X, clasificado A1, etc.
+                    slot_away TEXT,
+                    bracket_position INTEGER,
+                    FOREIGN KEY(tournament_id) REFERENCES tournaments(id) ON DELETE CASCADE,
+                    FOREIGN KEY(home_player_id) REFERENCES players(id),
+                    FOREIGN KEY(away_player_id) REFERENCES players(id)
+                );
+                CREATE INDEX IF NOT EXISTS idx_matches_tournament
+                    ON matches(tournament_id);
+                CREATE INDEX IF NOT EXISTS idx_matches_stage
+                    ON matches(tournament_id, stage, round_number);
                 """
-            )
-            conn.execute(
-                "CREATE INDEX IF NOT EXISTS idx_sorteos_timestamp ON sorteos(timestamp DESC)"
             )
 
 

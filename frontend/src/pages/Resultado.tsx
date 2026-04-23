@@ -96,7 +96,13 @@ export default function Resultado() {
               <button className="btn btn-ghost text-sm" onClick={shareLink}>
                 {copiedLink ? "✓ Link copiado" : "Compartir link"}
               </button>
-              <Link to="/" className="btn btn-primary text-sm">
+              <Link
+                to={`/admin?from=${sorteo.sorteo_id}`}
+                className="btn btn-primary text-sm"
+              >
+                🏆 Crear torneo
+              </Link>
+              <Link to="/" className="btn btn-ghost text-sm">
                 Nuevo sorteo
               </Link>
             </div>
