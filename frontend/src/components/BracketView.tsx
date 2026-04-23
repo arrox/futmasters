@@ -24,8 +24,8 @@ export default function BracketView({ matches, players }: Props) {
       <div className="fm-surface">
         <div className="fm-eyebrow mb-2">Knockout</div>
         <p style={{ color: "var(--fm-ink-muted)", fontSize: 13 }}>
-          Todavía no se sorteó la eliminatoria. Completá los partidos de grupo y
-          presioná "Sortear llaves".
+          Aún no se sorteó la eliminatoria. Completa los partidos de grupo y
+          presiona "Sortear llaves".
         </p>
       </div>
     );

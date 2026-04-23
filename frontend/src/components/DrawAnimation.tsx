@@ -66,7 +66,7 @@ export default function DrawAnimation({
             className="fm-display fm-gold-metal-text"
             style={{ fontSize: 28, marginTop: 4 }}
           >
-            {step < reveal.length ? "Sorteando…" : "Draw completo"}
+            {step < reveal.length ? "Sorteando…" : "Sorteo completo"}
           </h2>
         </div>
         <span className="chip mono">

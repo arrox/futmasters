@@ -88,7 +88,7 @@ export default function AdminTournament() {
                 )
               }
             >
-              {hasGroups ? "Re-sortear grupos" : "Sortear grupos"}
+              {hasGroups ? "Resortear grupos" : "Sortear grupos"}
             </button>
           )}
           <button
@@ -119,7 +119,7 @@ export default function AdminTournament() {
               disabled={!allGroupPlayed}
               title={
                 !allGroupPlayed
-                  ? "Completá todos los partidos de grupo"
+                  ? "Completa todos los partidos de grupo"
                   : undefined
               }
             >
@@ -181,6 +181,8 @@ export default function AdminTournament() {
         <FixtureList
           matches={groupMatches}
           players={players}
+          tournamentId={t.id}
+          tournamentName={t.name}
           editable
           onSubmit={async (mid, h, a) => {
             await api.setMatchResult(mid, h, a);
@@ -208,6 +210,8 @@ export default function AdminTournament() {
               ["round_of_16", "quarter", "semi", "final"].includes(m.stage),
             )}
             players={players}
+            tournamentId={t.id}
+            tournamentName={t.name}
             editable
             onSubmit={async (mid, h, a) => {
               await api.setMatchResult(mid, h, a);
@@ -263,7 +267,7 @@ function AdminTrades({
         <div className="fm-eyebrow mb-2">Trades</div>
         <p style={{ color: "var(--fm-ink-muted)", fontSize: 13 }}>
           No hay propuestas de intercambio. Cuando alguien proponga una,
-          vas a ver los magic-links para compartir si el mail no llegó.
+          aparecerán los enlaces mágicos para compartir si el correo no llegó.
         </p>
       </div>
     );
@@ -405,7 +409,7 @@ function TradeSide({
             className="fm-eyebrow"
             style={{ fontSize: 9, marginBottom: 4 }}
           >
-            Magic link
+            Enlace mágico
           </div>
           <div className="flex gap-1">
             <input
@@ -444,7 +448,7 @@ function statusChipLabel(s: string): string {
     {
       pending: "Pendiente",
       confirmed: "Esperando 2da firma",
-      awaiting_admin: "Esperando autorización admin",
+      awaiting_admin: "Esperando autorización del administrador",
       executed: "Ejecutado",
       cancelled: "Cancelado",
       expired: "Expirado",
@@ -601,14 +605,14 @@ function PlayerAdminCard({
           className="fm-eyebrow block mb-1"
           style={{ fontSize: 9 }}
         >
-          Email (para confirmar intercambios)
+          Correo (para confirmar intercambios)
         </label>
         <div className="flex gap-1">
           <input
             type="email"
             className="input flex-1"
             style={{ fontSize: 12 }}
-            placeholder="jugador@email.com"
+            placeholder="jugador@correo.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
           />

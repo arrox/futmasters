@@ -19,7 +19,7 @@ const MODES: { id: Mode; title: string; description: string }[] = [
     id: "bombo_equilibrado",
     title: "Champions",
     description:
-      "Divide a los participantes en grupos. Cada grupo recibe exactamente un equipo de cada bombo. Requiere N múltiplo del número de bombos.",
+      "Divide a los participantes en grupos. Cada grupo recibe exactamente un equipo de cada bombo. Requiere que N sea múltiplo del número de bombos.",
   },
   {
     id: "draft_bombos",
@@ -52,7 +52,7 @@ export default function ModeSelector({
             m.id === "bombo_equilibrado" && !enabled
               ? `Requiere que ${numParticipants} sea múltiplo de ${numBombos}`
               : !enabled
-                ? "No disponible para esta cantidad de participantes"
+                ? "No disponible para este número de participantes"
                 : undefined;
           return (
             <button

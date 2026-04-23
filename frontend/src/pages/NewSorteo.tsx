@@ -75,7 +75,7 @@ export default function NewSorteo() {
     if (!t) return null;
     const n = Number(t);
     if (!Number.isInteger(n) || n < 0 || n > Number.MAX_SAFE_INTEGER) {
-      throw new Error("La semilla debe ser un entero no negativo.");
+      throw new Error("La semilla debe ser un número entero no negativo.");
     }
     return n;
   }
@@ -112,8 +112,8 @@ export default function NewSorteo() {
         <div className="card">
           <h2 className="text-lg font-semibold mb-2">Reproducibilidad</h2>
           <p className="text-xs text-slate-400 mb-3">
-            Dejá vacío para usar CSPRNG (secreto). Para sorteos públicos
-            anuncien la semilla antes del sorteo y cualquiera puede
+            Deja vacío para usar CSPRNG (secreto). Para sorteos públicos,
+            anuncia la semilla antes de ejecutarlo y cualquiera podrá
             reproducirlo.
           </p>
           <input
@@ -131,11 +131,11 @@ export default function NewSorteo() {
               className="mt-2 text-sm"
               style={{ color: "var(--fm-ink-muted)", lineHeight: 1.6 }}
             >
-              Solo el admin puede ejecutar un sorteo. Ingresá con tu password
-              para continuar.
+              Solo el administrador puede ejecutar un sorteo. Ingresa con tu
+              contraseña para continuar.
             </p>
             <Link to="/admin/login" className="btn btn-primary mt-3">
-              Ingresar como admin
+              Ingresar como administrador
             </Link>
           </div>
         ) : (
@@ -173,10 +173,10 @@ export default function NewSorteo() {
         ) : (
           <div className="card text-slate-400">
             <h2 className="text-lg font-semibold mb-2 text-slate-100">
-              Preview del pool
+              Vista previa del pool
             </h2>
             <p className="text-sm">
-              Agregá al menos 2 participantes para ver el pool efectivo y los
+              Añade al menos 2 participantes para ver el pool efectivo y los
               bombos propuestos.
             </p>
           </div>

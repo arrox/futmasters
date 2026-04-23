@@ -41,15 +41,15 @@ export default function AdminLogin() {
   return (
     <div className="max-w-md mx-auto">
       <div className="card">
-        <h1 className="text-2xl font-bold mb-2">Admin login</h1>
+        <h1 className="text-2xl font-bold mb-2">Ingreso de administrador</h1>
         <p className="text-slate-400 text-sm mb-4">
-          Ingresá el password definido por la variable de entorno{" "}
+          Ingresa la contraseña definida por la variable de entorno{" "}
           <code className="mono">ADMIN_PASSWORD</code>.
         </p>
         <input
           type="password"
           className="input w-full mb-3"
-          placeholder="Password"
+          placeholder="Contraseña"
           value={pwd}
           onChange={(e) => setPwd(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && submit()}
@@ -60,7 +60,7 @@ export default function AdminLogin() {
           onClick={submit}
           disabled={!pwd || loading}
         >
-          {loading ? "Entrando…" : "Entrar"}
+          {loading ? "Ingresando…" : "Ingresar"}
         </button>
         {err && <p className="text-coral text-sm mt-3">{err}</p>}
       </div>

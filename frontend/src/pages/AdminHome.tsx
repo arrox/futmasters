@@ -35,7 +35,7 @@ export default function AdminHome() {
 
   function sortearConInscriptos() {
     if (pending.length < 2) {
-      alert("Necesitás al menos 2 inscriptos pendientes");
+      alert("Se necesitan al menos 2 inscritos pendientes.");
       return;
     }
     // Persistimos los IDs seleccionados en sessionStorage para que
@@ -48,7 +48,7 @@ export default function AdminHome() {
   }
 
   async function removeReg(id: number) {
-    if (!confirm("¿Eliminar este inscripto?")) return;
+    if (!confirm("¿Eliminar a este inscrito?")) return;
     try {
       await api.adminDeleteRegistration(id);
       load();
@@ -67,7 +67,7 @@ export default function AdminHome() {
   }
 
   async function remove(id: string) {
-    if (!confirm("¿Eliminar torneo y todos sus datos?")) return;
+    if (!confirm("¿Eliminar el torneo y todos sus datos?")) return;
     try {
       await api.deleteTournament(id);
       load();
@@ -92,11 +92,11 @@ export default function AdminHome() {
             disabled={pending.length < 2}
             title={
               pending.length < 2
-                ? "Necesitás al menos 2 inscriptos para sortear"
+                ? "Se necesitan al menos 2 inscritos para sortear."
                 : undefined
             }
           >
-            🎲 Sortear con {pending.length} inscripto{pending.length === 1 ? "" : "s"}
+            🎲 Sortear con {pending.length} inscrito{pending.length === 1 ? "" : "s"}
           </button>
           <Link to="/admin/sorteo" className="btn btn-ghost">
             Sortear manualmente
@@ -118,7 +118,7 @@ export default function AdminHome() {
         <div className="flex items-center justify-between mb-3">
           <div>
             <div className="fm-eyebrow">Registrations</div>
-            <h2 className="fm-h2 mt-1">Inscriptos</h2>
+            <h2 className="fm-h2 mt-1">Inscritos</h2>
           </div>
           <span className="chip">
             {pending.length} pendiente{pending.length === 1 ? "" : "s"}
@@ -129,8 +129,8 @@ export default function AdminHome() {
             className="text-sm"
             style={{ color: "var(--fm-ink-muted)" }}
           >
-            Todavía no hay nadie inscripto. Cuando alguien se registre en{" "}
-            <code>/</code> va a aparecer acá.
+            Aún no hay personas inscritas. Cuando alguien se registre en{" "}
+            <code>/</code>, aparecerá aquí.
           </p>
         ) : (
           <ul className="divide-y divide-soft/30">
@@ -205,10 +205,10 @@ export default function AdminHome() {
         <h2 className="text-lg font-semibold mb-3">Torneos</h2>
         {tournaments.length === 0 ? (
           <p className="text-slate-400 text-sm">
-            Todavía no hay torneos.{" "}
+            Aún no hay torneos.{" "}
             {sorteos.length === 0
-              ? "Primero hacé un sorteo en la página principal."
-              : "Creá uno desde un sorteo existente."}
+              ? "Primero ejecuta un sorteo."
+              : "Crea uno a partir de un sorteo existente."}
           </p>
         ) : (
           <ul className="divide-y divide-soft/30">
@@ -349,7 +349,7 @@ function CreateTournamentForm({
           {selected.num_participants} participantes —{" "}
           {isPowerOf2(selected.num_participants)
             ? "✓ bracket válido"
-            : "✗ no es potencia de 2 (usá 2, 4, 8 o 16)"}
+            : "✗ no es potencia de 2 (usa 2, 4, 8 o 16)"}
         </p>
       )}
       {format === "groups_knockout" && (
@@ -383,8 +383,9 @@ function CreateTournamentForm({
           {selected && (
             <div className="col-span-2 text-xs text-slate-400">
               {selected.num_participants} jugadores →{" "}
-              {selected.num_participants / numGroups} por grupo (debe ser entero) →{" "}
-              {numGroups * qualify} clasificados (debe ser potencia de 2: 2, 4, 8, 16).
+              {selected.num_participants / numGroups} por grupo (debe ser un
+              entero) → {numGroups * qualify} clasificados (debe ser potencia
+              de 2: 2, 4, 8, 16).
             </div>
           )}
         </div>
@@ -395,7 +396,7 @@ function CreateTournamentForm({
           checked={doubleRound}
           onChange={(e) => setDoubleRound(e.target.checked)}
         />
-        Ida y vuelta en fase de grupos
+        Ida y vuelta en la fase de grupos
       </label>
       {err && <p className="text-coral text-sm">{err}</p>}
       <div className="flex gap-2 justify-end">

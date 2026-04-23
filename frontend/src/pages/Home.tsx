@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import type { Tournament } from "../api/client";
 import { api } from "../api/client";
+import { shareRegistration } from "../api/share";
 
 export default function Home() {
   const [name, setName] = useState("");
@@ -51,7 +52,7 @@ export default function Home() {
         <div className="relative">
           <div className="fm-eyebrow">Kick off</div>
           <h1 className="fm-h1 mt-1" style={{ fontSize: 44, lineHeight: 1 }}>
-            Inscribite al{" "}
+            Inscríbete al{" "}
             <span className="fm-gold-metal-text">sorteo FC 26</span>
           </h1>
           <p
@@ -62,9 +63,9 @@ export default function Home() {
               lineHeight: 1.6,
             }}
           >
-            Dejanos tu nombre y email. Cuando el admin ejecute el sorteo, te
-            mandamos un email con el equipo que te tocó y las instrucciones para
-            entrar al torneo.
+            Déjanos tu nombre y correo. Cuando el administrador ejecute el
+            sorteo, recibirás un correo con el equipo asignado y las
+            instrucciones para ingresar al torneo.
           </p>
 
           {done ? (
@@ -92,19 +93,30 @@ export default function Home() {
                   lineHeight: 1.6,
                 }}
               >
-                Te mandamos un email cuando el sorteo esté hecho. Revisá la
-                casilla de entrada (y spam) de <span className="mono">{email}</span>.
+                Te enviaremos un correo cuando el sorteo esté hecho. Revisa la
+                bandeja de entrada (y spam) de{" "}
+                <span className="mono">{email}</span>.
               </p>
-              <button
-                className="btn btn-ghost mt-3"
-                onClick={() => {
-                  setDone(false);
-                  setName("");
-                  setEmail("");
-                }}
-              >
-                Inscribir a otro
-              </button>
+              <div className="flex gap-2 mt-3 flex-wrap">
+                <button
+                  className="btn btn-ghost"
+                  onClick={() => {
+                    setDone(false);
+                    setName("");
+                    setEmail("");
+                  }}
+                >
+                  Inscribir a otro
+                </button>
+                <a
+                  className="btn btn-green"
+                  target="_blank"
+                  rel="noreferrer"
+                  href={shareRegistration()}
+                >
+                  📲 Invitar por WhatsApp
+                </a>
+              </div>
             </div>
           ) : (
             <div className="mt-5 space-y-3">
@@ -128,12 +140,12 @@ export default function Home() {
                   className="fm-eyebrow block mb-1"
                   style={{ fontSize: 10 }}
                 >
-                  Tu email
+                  Tu correo electrónico
                 </label>
                 <input
                   type="email"
                   className="input w-full"
-                  placeholder="vos@email.com"
+                  placeholder="tu@correo.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && submit()}
@@ -177,7 +189,7 @@ export default function Home() {
             className="fm-eyebrow mt-1"
             style={{ fontSize: 11 }}
           >
-            inscriptos esperando el sorteo
+            inscritos esperando el sorteo
           </div>
         </div>
 
@@ -230,21 +242,23 @@ export default function Home() {
               paddingLeft: 18,
             }}
           >
-            <li>Te inscribís acá con nombre + email.</li>
+            <li>Te inscribes aquí con nombre y correo.</li>
             <li>
-              El <b>admin</b> cierra las inscripciones y ejecuta el sorteo.
+              El <b>administrador</b> cierra las inscripciones y ejecuta el
+              sorteo.
             </li>
             <li>
-              Te llega un email con tu equipo asignado (Real Madrid, Man City,
-              etc.) y el link al torneo.
+              Recibes un correo con tu equipo asignado (Real Madrid, Man City,
+              etc.) y el enlace al torneo.
             </li>
             <li>
-              Para entrar al sistema, Cloudflare te manda un código de 6
-              dígitos a tu email.
+              Para ingresar al sistema, Cloudflare te envía un código de 6
+              dígitos a tu correo.
             </li>
             <li>
-              ¿No te gusta tu equipo? Podés proponer intercambios con otros
-              inscriptos. Los dos confirman por email, y el admin autoriza.
+              ¿No te gusta tu equipo? Puedes proponer intercambios con otros
+              inscritos. Ambos confirman por correo y el administrador
+              autoriza.
             </li>
           </ol>
         </div>

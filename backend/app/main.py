@@ -24,7 +24,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 
-from . import audit, db, export, media, registrations, tournament, trades
+from . import audit, db, export, highlights, media, registrations, tournament, trades
 from .admin_auth import admin_password, require_admin
 from .bombos import build_bombos, compute_num_bombos
 from .pool_selector import describe_pool, select_effective_pool
@@ -309,6 +309,27 @@ def export_sorteo(sorteo_id: str, format: str = Query("json", pattern="^(csv|jso
         content=content,
         media_type=content_type,
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+@app.get("/api/matches/{match_id}/highlight.png")
+def match_highlight_png(match_id: int):
+    """Imagen compartible del partido (para WhatsApp/OG preview)."""
+    try:
+        png = highlights.render_match_highlight(
+            match_id,
+            media_dir=media.media_dir(),
+            public_url=os.environ.get("PUBLIC_BASE_URL", ""),
+        )
+    except ValueError as exc:
+        raise HTTPException(404, str(exc)) from exc
+    return Response(
+        content=png,
+        media_type="image/png",
+        headers={
+            "Cache-Control": "public, max-age=300",
+            "Content-Disposition": f'inline; filename="match-{match_id}.png"',
+        },
     )
 
 

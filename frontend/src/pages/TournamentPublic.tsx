@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import type { Player, TournamentDetail, Trade } from "../api/client";
 import { api } from "../api/client";
+import { shareTournament } from "../api/share";
 import BracketView from "../components/BracketView";
 import FixtureList from "../components/FixtureList";
 import FutCard from "../components/FutCard";
@@ -59,6 +60,18 @@ export default function TournamentPublic() {
             </div>
           </div>
           <div className="flex gap-2 flex-wrap">
+            <a
+              className="btn btn-green text-sm"
+              target="_blank"
+              rel="noreferrer"
+              href={shareTournament({
+                tournamentId: t.id,
+                tournamentName: t.name,
+              })}
+              title="Compartir torneo en WhatsApp"
+            >
+              📲 Compartir
+            </a>
             <button
               className="btn btn-primary text-sm"
               onClick={() => setShowTradeModal(true)}
@@ -148,6 +161,8 @@ export default function TournamentPublic() {
             (m) => m.stage === "group" || m.stage === "league",
           )}
           players={players}
+          tournamentId={t.id}
+          tournamentName={t.name}
         />
       )}
 
@@ -245,23 +260,24 @@ function TradeModal({
               ✓ Propuesta creada.
             </p>
             <p className="text-sm" style={{ color: "var(--fm-ink-muted)" }}>
-              Enviamos un link de confirmación a{" "}
+              Enviamos un enlace de confirmación a{" "}
               <span className="mono">
-                {done.proposer.email_hint ?? "tu email"}
+                {done.proposer.email_hint ?? "tu correo"}
               </span>{" "}
               y a{" "}
               <span className="mono">
                 {done.receiver.email_hint ?? "tu contraparte"}
               </span>
-              . Cuando los dos hagan clic, se intercambian los equipos automáticamente.
+              . Cuando ambos hagan clic, los equipos se intercambiarán
+              automáticamente.
             </p>
             {done.delivery?.proposer?.backend !== "smtp" && (
               <div
                 className="chip chip--totw block"
                 style={{ whiteSpace: "normal", textAlign: "left" }}
               >
-                SMTP no configurado — pediles al admin que te pase el link
-                desde el panel.
+                SMTP no configurado — pide al administrador que te envíe el
+                enlace desde el panel.
               </div>
             )}
             <button className="btn btn-primary w-full" onClick={onClose}>
@@ -272,7 +288,7 @@ function TradeModal({
           <div className="space-y-3">
             <div>
               <label className="fm-eyebrow block mb-1" style={{ fontSize: 10 }}>
-                Sos…
+                Eres…
               </label>
               <select
                 className="input w-full"
@@ -281,7 +297,7 @@ function TradeModal({
                   setProposerId(Number(e.target.value) || null)
                 }
               >
-                <option value="">Elegí tu nombre</option>
+                <option value="">Selecciona tu nombre</option>
                 {players.map((p) => (
                   <option key={p.id} value={p.id}>
                     {p.display_name} — {p.team_name}
@@ -291,7 +307,7 @@ function TradeModal({
             </div>
             <div>
               <label className="fm-eyebrow block mb-1" style={{ fontSize: 10 }}>
-                Querés cambiar tu equipo con…
+                Quieres cambiar tu equipo con…
               </label>
               <select
                 className="input w-full"
@@ -300,7 +316,7 @@ function TradeModal({
                   setReceiverId(Number(e.target.value) || null)
                 }
               >
-                <option value="">Elegí con quién</option>
+                <option value="">Selecciona con quién</option>
                 {players
                   .filter((p) => p.id !== proposerId)
                   .map((p) => (
@@ -312,12 +328,12 @@ function TradeModal({
             </div>
             <div>
               <label className="fm-eyebrow block mb-1" style={{ fontSize: 10 }}>
-                Tu email registrado
+                Tu correo registrado
               </label>
               <input
                 type="email"
                 className="input w-full"
-                placeholder="jugador@email.com"
+                placeholder="jugador@correo.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
@@ -325,8 +341,8 @@ function TradeModal({
                 className="text-xs mt-1"
                 style={{ color: "var(--fm-ink-muted)" }}
               >
-                Te mandamos un link de confirmación para que nadie pueda
-                cambiar tu equipo sin vos.
+                Te enviamos un enlace de confirmación para que nadie pueda
+                cambiar tu equipo sin tu permiso.
               </p>
             </div>
             <div>
@@ -336,7 +352,7 @@ function TradeModal({
               <input
                 className="input w-full"
                 maxLength={200}
-                placeholder="“te paso Inter por tu City”"
+                placeholder="“te cambio Inter por tu City”"
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
               />

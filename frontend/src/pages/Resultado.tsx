@@ -94,7 +94,7 @@ export default function Resultado() {
                 Exportar MD
               </a>
               <button className="btn btn-ghost text-sm" onClick={shareLink}>
-                {copiedLink ? "✓ Link copiado" : "Compartir link"}
+                {copiedLink ? "✓ Enlace copiado" : "Compartir enlace"}
               </button>
               <Link
                 to={`/admin?from=${sorteo.sorteo_id}`}

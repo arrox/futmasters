@@ -54,7 +54,7 @@ export default function TradeConfirm() {
       <div className="fm-surface max-w-xl mx-auto">
         <div className="fm-eyebrow">Trade</div>
         <h1 className="fm-h1 mt-1" style={{ fontSize: 28 }}>
-          Link inválido
+          Enlace inválido
         </h1>
         <p className="mt-3 text-sm" style={{ color: "var(--fm-ink-muted)" }}>
           {err}
@@ -78,15 +78,15 @@ export default function TradeConfirm() {
       <div className="fm-surface">
         <div className="fm-eyebrow">Intercambio</div>
         <h1 className="fm-h1 mt-1" style={{ fontSize: 32 }}>
-          Confirmá el cambio
+          Confirma el cambio
         </h1>
         <p
           className="mt-2"
           style={{ color: "var(--fm-ink-muted)", fontSize: 13 }}
         >
           {trade.role === "proposer"
-            ? "Estás viendo este link como quien propuso el intercambio."
-            : "Estás viendo este link como quien recibe la propuesta."}
+            ? "Estás viendo este enlace como quien propuso el intercambio."
+            : "Estás viendo este enlace como quien recibe la propuesta."}
         </p>
       </div>
 
@@ -162,8 +162,8 @@ export default function TradeConfirm() {
             className="text-sm"
             style={{ color: "var(--fm-warning)", lineHeight: 1.6 }}
           >
-            ✓ Ambos confirmaron. Falta que el admin autorice el intercambio
-            para que los equipos se cambien en el torneo.
+            ✓ Ambos confirmaron. Falta que el administrador autorice el
+            intercambio para que los equipos se cambien en el torneo.
           </p>
         </div>
       )}
@@ -174,7 +174,7 @@ export default function TradeConfirm() {
             style={{ color: "var(--fm-fut-green)", lineHeight: 1.6 }}
           >
             ✓ Intercambio ejecutado. Los equipos ya fueron cambiados en el
-            torneo. Pueden verificar sus nuevas asignaciones en la vista
+            torneo. Puedes verificar las nuevas asignaciones en la vista
             pública del campeonato.
           </p>
         </div>
@@ -236,7 +236,7 @@ function statusLabel(s: string): string {
     {
       pending: "Pendiente — faltan firmas",
       confirmed: "Firmado parcialmente",
-      awaiting_admin: "Esperando autorización del admin",
+      awaiting_admin: "Esperando autorización del administrador",
       executed: "Intercambio ejecutado",
       cancelled: "Cancelado",
       expired: "Expirado",

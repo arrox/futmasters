@@ -31,7 +31,7 @@ export default function ParticipantList({
     const cleanName = name.trim();
     const cleanEmail = email.trim();
     if (!cleanName) {
-      setError("Ingresá un nombre.");
+      setError("Ingresa un nombre.");
       return;
     }
     if (cleanName.length > 50) {
@@ -40,11 +40,11 @@ export default function ParticipantList({
     }
     if (requireEmail) {
       if (!cleanEmail) {
-        setError("El email es obligatorio.");
+        setError("El correo es obligatorio.");
         return;
       }
       if (!validEmail(cleanEmail)) {
-        setError("Email inválido.");
+        setError("Correo inválido.");
         return;
       }
     }
@@ -59,7 +59,7 @@ export default function ParticipantList({
       cleanEmail &&
       participants.some((p) => p.email?.toLowerCase() === lowerEmail)
     ) {
-      setError(`Email "${cleanEmail}" ya está en la lista.`);
+      setError(`El correo "${cleanEmail}" ya está en la lista.`);
       return;
     }
     if (participants.length >= max) {
@@ -152,7 +152,7 @@ export default function ParticipantList({
         <input
           className="input"
           type="email"
-          placeholder={requireEmail ? "Email (obligatorio)" : "Email (opcional)"}
+          placeholder={requireEmail ? "Correo (obligatorio)" : "Correo (opcional)"}
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           onKeyDown={onKey}
@@ -197,7 +197,7 @@ export default function ParticipantList({
           className="ml-auto text-[11px]"
           style={{ color: "var(--fm-ink-dim)" }}
         >
-          CSV: una línea por persona, "nombre, email"
+          CSV: una línea por persona, "nombre, correo"
         </span>
       </div>
       {error && (
@@ -218,7 +218,7 @@ export default function ParticipantList({
             fontSize: 13,
           }}
         >
-          Agregá al menos 2 participantes (nombre + email) para continuar.
+          Añade al menos 2 participantes (nombre + correo) para continuar.
         </p>
       ) : (
         <ul className="space-y-1.5">
@@ -257,7 +257,7 @@ export default function ParticipantList({
                     className="mono text-xs truncate"
                     style={{ color: "var(--fm-ink-muted)" }}
                   >
-                    {p.email ?? "sin email"}
+                    {p.email ?? "sin correo"}
                   </div>
                 </div>
               </div>

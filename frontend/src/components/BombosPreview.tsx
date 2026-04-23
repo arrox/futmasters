@@ -37,8 +37,8 @@ export default function BombosPreview({
         }}
       >
         {participants < 12
-          ? `Con ${participants} participantes usamos solo los ${participants} primeros clubes por prioridad.`
-          : `Con ${participants} participantes usamos todos los clubes y completamos con ${nationsCount} selecciones top.`}
+          ? `Con ${participants} participantes se usan solo los ${participants} primeros clubes por prioridad.`
+          : `Con ${participants} participantes se usan todos los clubes y se completan con ${nationsCount} selecciones top.`}
       </p>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         {bombos.map((b) => (

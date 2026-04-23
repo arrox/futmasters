@@ -93,7 +93,7 @@ def send_trade_email(
     """Manda el link de confirmación a un participante del trade."""
     link = build_trade_link(token)
     if role == "proposer":
-        subject = f"[FutMasters] Confirmá tu propuesta de intercambio"
+        subject = "[FutMasters] Confirma tu propuesta de intercambio"
         intro = (
             f"Hola {player_name}, propusiste intercambiar tu equipo "
             f"({proposer_team}) con {counterparty_name} ({receiver_team})."
@@ -107,8 +107,9 @@ def send_trade_email(
     text = (
         f"{intro}\n\n"
         f"Torneo: {tournament_name}\n"
-        f"Para confirmar, entrá a este link:\n\n  {link}\n\n"
-        f"El link expira en 48 horas. Si no reconocés esta propuesta, ignorá este mensaje.\n\n"
+        f"Para confirmar, abre este enlace:\n\n  {link}\n\n"
+        f"El enlace expira en 48 horas. Si no reconoces esta propuesta, "
+        f"ignora este mensaje.\n\n"
         f"— FutMasters"
     )
     html = f"""\
@@ -116,7 +117,7 @@ def send_trade_email(
       <h2 style="color:#7a5c1e">FutMasters · Intercambio</h2>
       <p>{intro}</p>
       <p><b>Torneo:</b> {tournament_name}</p>
-      <p>Para confirmar hacé clic:</p>
+      <p>Para confirmar, haz clic aquí:</p>
       <p>
         <a href="{link}" style="display:inline-block;padding:12px 20px;
            background:linear-gradient(180deg,#fff1c1,#f0c460 25%,#b8862e 75%,#8a5a1a);
@@ -126,11 +127,12 @@ def send_trade_email(
         </a>
       </p>
       <p style="color:#666;font-size:12px">
-        O pegá este link en tu navegador: <br>
+        O copia este enlace en tu navegador: <br>
         <code>{link}</code>
       </p>
       <p style="color:#888;font-size:11px">
-        El link expira en 48 horas. Si no reconocés esta propuesta, ignorá este mensaje.
+        El enlace expira en 48 horas. Si no reconoces esta propuesta, ignora
+        este mensaje.
       </p>
     </div>
     """
@@ -161,37 +163,38 @@ def send_welcome_email(
     subject = f"[FutMasters] Bienvenido a {tournament_name}"
     text = (
         f"Hola {player_name},\n\n"
-        f"Quedaste adentro del torneo {tournament_name}.\n"
-        f"Te tocó jugar con: {team_name} (OVR {team_ovr}).\n\n"
-        f"Para ingresar al sistema entrá a {base}.\n"
-        f"Cloudflare te va a mandar un código de 6 dígitos a este email ({to_addr}) "
-        f"para verificar tu identidad. Escribí el código cuando te lo pida y listo.\n\n"
-        f"¿Querés cambiar de equipo con alguien? Desde la página del torneo "
-        f"podés proponer intercambios. Vos confirmás con tu link de mail, tu "
-        f"contraparte también, y el admin lo autoriza.\n\n"
-        f"Suerte — FutMasters"
+        f"Fuiste incluido en el torneo {tournament_name}.\n"
+        f"Tu equipo asignado: {team_name} (OVR {team_ovr}).\n\n"
+        f"Para ingresar al sistema visita {base}.\n"
+        f"Cloudflare enviará un código de 6 dígitos a este correo ({to_addr}) "
+        f"para verificar tu identidad. Ingresa el código cuando te lo solicite "
+        f"y listo.\n\n"
+        f"¿Quieres cambiar de equipo con alguien? Desde la página del torneo "
+        f"puedes proponer intercambios. Tú confirmas con tu enlace, tu "
+        f"contraparte también, y el administrador autoriza el cambio final.\n\n"
+        f"Saludos — FutMasters"
     )
     html = f"""\
     <div style="font-family:Inter,system-ui,sans-serif;color:#222;max-width:560px">
       <h2 style="color:#7a5c1e;margin-top:0">FutMasters · Bienvenido</h2>
       <p>Hola <b>{player_name}</b>,</p>
-      <p>Quedaste adentro del torneo <b>{tournament_name}</b>.</p>
+      <p>Fuiste incluido en el torneo <b>{tournament_name}</b>.</p>
       <p style="background:#fff7e0;border:1px solid #f0c460;padding:12px;border-radius:6px">
-        Te tocó jugar con <b>{team_name}</b> · OVR <b>{team_ovr}</b>
+        Tu equipo asignado: <b>{team_name}</b> · OVR <b>{team_ovr}</b>
       </p>
       <h3 style="margin-bottom:4px">Cómo ingresar al sistema</h3>
       <ol>
-        <li>Entrá a <a href="{base}">{base}</a></li>
-        <li>Cloudflare te va a pedir tu email y te mandará un código de 6 dígitos
+        <li>Abre <a href="{base}">{base}</a></li>
+        <li>Cloudflare te pedirá tu correo y enviará un código de 6 dígitos
             a <b>{to_addr}</b>.</li>
-        <li>Poné el código y listo — ya estás dentro.</li>
+        <li>Ingresa el código y listo — ya estás dentro.</li>
       </ol>
       <h3 style="margin-bottom:4px">Cambiar de equipo</h3>
-      <p>Desde la página del torneo podés proponer intercambios con otros
-         participantes. Vos confirmás con tu link de mail, tu contraparte
-         también, y el admin autoriza el swap final.</p>
+      <p>Desde la página del torneo puedes proponer intercambios con otros
+         participantes. Tú confirmas con tu enlace, tu contraparte también, y
+         el administrador autoriza el cambio final.</p>
       <p style="color:#888;font-size:12px;margin-top:20px">
-        Si no reconocés este mensaje, ignoralo.
+        Si no reconoces este mensaje, ignóralo.
       </p>
     </div>
     """

@@ -1,8 +1,11 @@
 import type { Match, Player } from "../api/client";
+import { shareMatchResult } from "../api/share";
 
 interface Props {
   matches: Match[];
   players: Player[];
+  tournamentId?: string;
+  tournamentName?: string;
   editable?: boolean;
   onSubmit?: (matchId: number, home: number, away: number) => Promise<void>;
   onClear?: (matchId: number) => Promise<void>;
@@ -12,6 +15,8 @@ interface Props {
 export default function FixtureList({
   matches,
   players,
+  tournamentId,
+  tournamentName,
   editable = false,
   onSubmit,
   onClear,
@@ -61,6 +66,8 @@ export default function FixtureList({
                 editable={editable}
                 onSubmit={onSubmit}
                 onClear={onClear}
+                tournamentId={tournamentId}
+                tournamentName={tournamentName}
               />
             ))}
           </ul>
@@ -77,11 +84,22 @@ interface RowProps {
   editable: boolean;
   onSubmit?: (matchId: number, home: number, away: number) => Promise<void>;
   onClear?: (matchId: number) => Promise<void>;
+  tournamentId?: string;
+  tournamentName?: string;
 }
 
 import { useState } from "react";
 
-function MatchRow({ match, home, away, editable, onSubmit, onClear }: RowProps) {
+function MatchRow({
+  match,
+  home,
+  away,
+  editable,
+  onSubmit,
+  onClear,
+  tournamentId,
+  tournamentName,
+}: RowProps) {
   const [h, setH] = useState<string>(
     match.home_score !== null ? String(match.home_score) : "",
   );
@@ -197,8 +215,37 @@ function MatchRow({ match, home, away, editable, onSubmit, onClear }: RowProps) 
           )}
         </div>
       )}
-      {match.status === "played" && !editable && (
-        <span className="chip text-[10px]">✓ jugado</span>
+      {match.status === "played" && (
+        <div className="flex gap-1 items-center">
+          {!editable && (
+            <span className="chip text-[10px]">✓ jugado</span>
+          )}
+          {tournamentId && home && away && (
+            <a
+              className="btn btn-green"
+              style={{ fontSize: 11, padding: "4px 10px" }}
+              target="_blank"
+              rel="noreferrer"
+              href={shareMatchResult({
+                matchId: match.id,
+                tournamentId,
+                tournamentName: tournamentName ?? "FutMasters",
+                homeName: home.display_name,
+                awayName: away.display_name,
+                homeScore: match.home_score ?? 0,
+                awayScore: match.away_score ?? 0,
+                stageLabel:
+                  match.stage === "group"
+                    ? `Grupo ${match.group_label ?? ""} · Fecha ${match.round_number}`
+                    : match.stage === "league"
+                      ? `Fecha ${match.round_number}`
+                      : stageDisplay(match.stage),
+              })}
+            >
+              📲 Compartir
+            </a>
+          )}
+        </div>
       )}
       {error && (
         <span className="text-coral text-xs basis-full">{error}</span>
