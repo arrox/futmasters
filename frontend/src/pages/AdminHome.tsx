@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import type {
+  Registration,
   SorteoListItem,
   Tournament,
   TournamentFormat,
@@ -10,20 +11,49 @@ import { adminToken, api } from "../api/client";
 export default function AdminHome() {
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [sorteos, setSorteos] = useState<SorteoListItem[]>([]);
+  const [regs, setRegs] = useState<Registration[]>([]);
   const [showCreate, setShowCreate] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const nav = useNavigate();
 
   async function load() {
     try {
-      const [ts, s] = await Promise.all([
+      const [ts, s, r] = await Promise.all([
         api.listTournaments(),
         api.listSorteos(50, 0),
+        api.adminListRegistrations(),
       ]);
       setTournaments(ts);
       setSorteos(s.items);
+      setRegs(r);
     } catch (e) {
       setErr((e as Error).message);
+    }
+  }
+
+  const pending = regs.filter((r) => r.status === "pending");
+
+  function sortearConInscriptos() {
+    if (pending.length < 2) {
+      alert("Necesitás al menos 2 inscriptos pendientes");
+      return;
+    }
+    // Persistimos los IDs seleccionados en sessionStorage para que
+    // /admin/sorteo los levante y precargue la lista.
+    sessionStorage.setItem(
+      "fc26_prefill_regs",
+      JSON.stringify(pending.map((r) => ({ name: r.name, email: r.email }))),
+    );
+    nav("/admin/sorteo");
+  }
+
+  async function removeReg(id: number) {
+    if (!confirm("¿Eliminar este inscripto?")) return;
+    try {
+      await api.adminDeleteRegistration(id);
+      load();
+    } catch (e) {
+      alert((e as Error).message);
     }
   }
 
@@ -49,8 +79,28 @@ export default function AdminHome() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-2">
-        <h1 className="text-2xl font-bold">Admin</h1>
-        <div className="flex gap-2">
+        <div>
+          <div className="fm-eyebrow">Panel</div>
+          <h1 className="fm-h1 mt-1" style={{ fontSize: 36 }}>
+            Admin
+          </h1>
+        </div>
+        <div className="flex gap-2 flex-wrap">
+          <button
+            className="btn btn-green"
+            onClick={sortearConInscriptos}
+            disabled={pending.length < 2}
+            title={
+              pending.length < 2
+                ? "Necesitás al menos 2 inscriptos para sortear"
+                : undefined
+            }
+          >
+            🎲 Sortear con {pending.length} inscripto{pending.length === 1 ? "" : "s"}
+          </button>
+          <Link to="/admin/sorteo" className="btn btn-ghost">
+            Sortear manualmente
+          </Link>
           <button
             className="btn btn-primary"
             onClick={() => setShowCreate(true)}
@@ -62,6 +112,80 @@ export default function AdminHome() {
             Salir
           </button>
         </div>
+      </div>
+
+      <div className="fm-surface">
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <div className="fm-eyebrow">Registrations</div>
+            <h2 className="fm-h2 mt-1">Inscriptos</h2>
+          </div>
+          <span className="chip">
+            {pending.length} pendiente{pending.length === 1 ? "" : "s"}
+          </span>
+        </div>
+        {regs.length === 0 ? (
+          <p
+            className="text-sm"
+            style={{ color: "var(--fm-ink-muted)" }}
+          >
+            Todavía no hay nadie inscripto. Cuando alguien se registre en{" "}
+            <code>/</code> va a aparecer acá.
+          </p>
+        ) : (
+          <ul className="divide-y divide-soft/30">
+            {regs.map((r) => (
+              <li
+                key={r.id}
+                className="flex items-center justify-between py-2 gap-2"
+              >
+                <div className="min-w-0">
+                  <div
+                    style={{
+                      fontFamily: "var(--fm-font-sans)",
+                      fontWeight: 500,
+                    }}
+                  >
+                    {r.name}{" "}
+                    {r.status === "used" && (
+                      <span className="chip chip--green" style={{ marginLeft: 6 }}>
+                        usado
+                      </span>
+                    )}
+                    {r.status === "removed" && (
+                      <span
+                        className="chip"
+                        style={{
+                          marginLeft: 6,
+                          opacity: 0.6,
+                        }}
+                      >
+                        eliminado
+                      </span>
+                    )}
+                  </div>
+                  <div
+                    className="mono text-xs truncate"
+                    style={{ color: "var(--fm-ink-muted)" }}
+                  >
+                    {r.email}
+                  </div>
+                </div>
+                <div className="mono text-xs" style={{ color: "var(--fm-ink-dim)" }}>
+                  {r.created_at.slice(0, 16).replace("T", " ")}
+                </div>
+                {r.status === "pending" && (
+                  <button
+                    className="btn btn-ghost text-xs text-coral"
+                    onClick={() => removeReg(r.id)}
+                  >
+                    ✕
+                  </button>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
 
       {err && <p className="text-coral text-sm">{err}</p>}

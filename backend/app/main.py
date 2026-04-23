@@ -24,7 +24,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 
-from . import audit, db, export, media, tournament, trades
+from . import audit, db, export, media, registrations, tournament, trades
 from .admin_auth import admin_password, require_admin
 from .bombos import build_bombos, compute_num_bombos
 from .pool_selector import describe_pool, select_effective_pool
@@ -36,6 +36,9 @@ from .schemas import (
     PlayerOut,
     PlayerUpdate,
     PoolResponse,
+    RegistrationCountOut,
+    RegistrationCreate,
+    RegistrationOut,
     SorteoListItem,
     SorteoListResponse,
     SorteoRequest,
@@ -232,6 +235,40 @@ def post_sorteo(req: SorteoRequest) -> dict:
         payload_canonical=canonical,
         full_result=full_result,
     )
+
+    # Si los participantes provienen de registros públicos, los marcamos usados.
+    emails_in_sorteo = [
+        a["email"] for a in resultado["assignments"] if a.get("email")
+    ]
+    if emails_in_sorteo:
+        registrations.mark_used(emails_in_sorteo, sorteo_id)
+
+    # Welcome email a cada participante con email registrado. Los errores de
+    # envío NO rompen el sorteo — la idea es no perder un sorteo por un mail
+    # que falló. El admin puede ver los logs si algo no llegó.
+    from . import mailer
+    import logging
+    _log = logging.getLogger("futmasters.sorteo")
+    for a in resultado["assignments"]:
+        if not a.get("email"):
+            continue
+        try:
+            res = mailer.send_welcome_email(
+                to_addr=a["email"],
+                player_name=a["participant"],
+                team_name=a["team"],
+                team_ovr=a["ovr"],
+                tournament_name=f"Sorteo {req.mode} · {timestamp[:10]}",
+            )
+            _log.info(
+                "welcome %s → %s backend=%s sent=%s",
+                a["participant"], a["email"], res.backend, res.sent,
+            )
+        except Exception as exc:  # noqa: BLE001
+            _log.exception(
+                "welcome email failed for %s (%s): %s",
+                a["participant"], a["email"], exc,
+            )
 
     return full_result
 
@@ -534,6 +571,46 @@ def admin_delete_player_photo(player_id: int):
     except Exception:  # noqa: BLE001
         auto = None
     return tournament.update_player(player_id, photo_filename=auto)
+
+
+# ──────────────────────────────────────────────────────────────
+# Registros públicos (self-service) + gestión admin
+# ──────────────────────────────────────────────────────────────
+@app.post("/api/registrations", response_model=RegistrationOut)
+def public_register(req: RegistrationCreate):
+    try:
+        return registrations.register(req.name, req.email, req.notes)
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
+
+
+@app.get("/api/registrations/count", response_model=RegistrationCountOut)
+def public_count_registrations():
+    return {"pending": registrations.count_pending()}
+
+
+@app.get(
+    "/api/admin/registrations",
+    response_model=list[RegistrationOut],
+    dependencies=[Depends(require_admin)],
+)
+def admin_list_registrations(
+    status: str | None = Query(default=None),
+):
+    if status and status not in ("pending", "used", "removed"):
+        raise HTTPException(400, "status inválido")
+    return registrations.list_all(status=status)
+
+
+@app.delete(
+    "/api/admin/registrations/{reg_id}",
+    dependencies=[Depends(require_admin)],
+)
+def admin_delete_registration(reg_id: int):
+    if not registrations.get(reg_id):
+        raise HTTPException(404, "Registro no encontrado")
+    registrations.remove(reg_id)
+    return {"removed": reg_id}
 
 
 # ──────────────────────────────────────────────────────────────

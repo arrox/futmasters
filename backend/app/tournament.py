@@ -168,26 +168,9 @@ def create_from_sorteo(
                 ),
             )
 
-    # Welcome emails (si hay emails y SMTP configurado). Errores no bloquean.
-    try:
-        from . import mailer
-        if email_by_name:
-            players_created = list_players(t["id"])
-            for p in players_created:
-                if p.get("email"):
-                    try:
-                        mailer.send_welcome_email(
-                            to_addr=p["email"],
-                            player_name=p["display_name"],
-                            team_name=p["team_name"],
-                            team_ovr=p["team_ovr"],
-                            tournament_name=t["name"],
-                        )
-                    except Exception:  # noqa: BLE001
-                        pass
-    except Exception:  # noqa: BLE001
-        pass
-
+    # Nota: los welcome emails se mandan en POST /api/sorteo, no acá.
+    # Así el participante recibe su equipo apenas se sortea, sin esperar a
+    # que el admin cree el shell del torneo.
     return get_tournament(t["id"])
 
 

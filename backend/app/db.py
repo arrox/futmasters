@@ -151,6 +151,19 @@ def init_db() -> None:
                     ON matches(tournament_id);
                 CREATE INDEX IF NOT EXISTS idx_matches_stage
                     ON matches(tournament_id, stage, round_number);
+
+                CREATE TABLE IF NOT EXISTS registrations (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name TEXT NOT NULL,
+                    email TEXT NOT NULL UNIQUE,
+                    created_at TEXT NOT NULL,
+                    status TEXT NOT NULL DEFAULT 'pending',
+                        -- 'pending' | 'used' | 'removed'
+                    used_in_sorteo_id TEXT,
+                    notes TEXT
+                );
+                CREATE INDEX IF NOT EXISTS idx_registrations_status
+                    ON registrations(status);
                 """
             )
             # Migraciones in-place para DBs creadas con schema anterior.

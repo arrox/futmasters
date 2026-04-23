@@ -9,7 +9,28 @@ import type { Mode, PoolResponse } from "../api/client";
 import { adminToken, api } from "../api/client";
 
 export default function NewSorteo() {
-  const [participants, setParticipants] = useState<ParticipantEntry[]>([]);
+  const [participants, setParticipants] = useState<ParticipantEntry[]>(() => {
+    try {
+      const raw = sessionStorage.getItem("fc26_prefill_regs");
+      if (raw) {
+        sessionStorage.removeItem("fc26_prefill_regs");
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          return parsed
+            .filter(
+              (p: unknown): p is { name: string; email: string } =>
+                typeof p === "object" && p !== null &&
+                typeof (p as { name: unknown }).name === "string" &&
+                typeof (p as { email: unknown }).email === "string",
+            )
+            .map((p) => ({ name: p.name, email: p.email }));
+        }
+      }
+    } catch {
+      /* noop */
+    }
+    return [];
+  });
   const [mode, setMode] = useState<Mode>("simple");
   const [seedText, setSeedText] = useState("");
   const [pool, setPool] = useState<PoolResponse | null>(null);

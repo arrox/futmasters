@@ -1,4 +1,5 @@
 import { Link, Navigate, Route, Routes, useLocation } from "react-router-dom";
+import Home from "./pages/Home";
 import NewSorteo from "./pages/NewSorteo";
 import Resultado from "./pages/Resultado";
 import Historial from "./pages/Historial";
@@ -117,7 +118,7 @@ export default function App() {
             flexWrap: "wrap",
           }}
         >
-          <NavItem to="/" label="Inicio" />
+          <NavItem to="/" label="Inscribirme" />
           <NavItem to="/historial" label="Historial" />
           <NavItem to="/admin" label="Admin" />
         </nav>
@@ -140,7 +141,7 @@ export default function App() {
         }}
       >
         <Routes>
-          <Route path="/" element={<NewSorteo />} />
+          <Route path="/" element={<Home />} />
           <Route path="/resultado/:id" element={<Resultado />} />
           <Route path="/historial" element={<Historial />} />
           <Route path="/admin/login" element={<AdminLogin />} />
@@ -149,6 +150,14 @@ export default function App() {
             element={
               <RequireAdmin>
                 <AdminHome />
+              </RequireAdmin>
+            }
+          />
+          <Route
+            path="/admin/sorteo"
+            element={
+              <RequireAdmin>
+                <NewSorteo />
               </RequireAdmin>
             }
           />

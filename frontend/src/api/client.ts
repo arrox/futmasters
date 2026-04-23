@@ -447,4 +447,35 @@ export const api = {
       { method: "POST" },
       true,
     ),
+
+  // Registrations
+  registerPublic: (name: string, email: string) =>
+    request<Registration>("/registrations", {
+      method: "POST",
+      body: JSON.stringify({ name, email }),
+    }),
+  registrationCount: () =>
+    request<{ pending: number }>("/registrations/count"),
+  adminListRegistrations: (status?: "pending" | "used" | "removed") =>
+    request<Registration[]>(
+      `/admin/registrations${status ? `?status=${status}` : ""}`,
+      undefined,
+      true,
+    ),
+  adminDeleteRegistration: (id: number) =>
+    request<{ removed: number }>(
+      `/admin/registrations/${id}`,
+      { method: "DELETE" },
+      true,
+    ),
 };
+
+export interface Registration {
+  id: number;
+  name: string;
+  email: string;
+  created_at: string;
+  status: "pending" | "used" | "removed";
+  used_in_sorteo_id: string | null;
+  notes: string | null;
+}

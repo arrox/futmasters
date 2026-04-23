@@ -354,3 +354,39 @@ class AdminLoginRequest(BaseModel):
 class AdminLoginResponse(BaseModel):
     token: str
     configured: bool
+
+
+class RegistrationCreate(BaseModel):
+    name: str = Field(min_length=1, max_length=50)
+    email: str = Field(min_length=3, max_length=120)
+    notes: Optional[str] = Field(default=None, max_length=200)
+
+    @field_validator("email")
+    @classmethod
+    def _clean_email(cls, v: str) -> str:
+        v = v.strip().lower()
+        if "@" not in v or "." not in v.split("@")[-1]:
+            raise ValueError("Email inválido")
+        return v
+
+    @field_validator("name")
+    @classmethod
+    def _clean_name(cls, v: str) -> str:
+        v = v.strip()
+        if not v:
+            raise ValueError("Nombre vacío")
+        return v
+
+
+class RegistrationOut(BaseModel):
+    id: int
+    name: str
+    email: str
+    created_at: str
+    status: Literal["pending", "used", "removed"]
+    used_in_sorteo_id: Optional[str] = None
+    notes: Optional[str] = None
+
+
+class RegistrationCountOut(BaseModel):
+    pending: int
