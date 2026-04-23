@@ -456,3 +456,25 @@ def _execute_swap(trade_id: str) -> None:
             """,
             (STATUS_EXECUTED, _now_iso(), trade_id),
         )
+    # Notificar por WhatsApp (best-effort, fuera de la transacción).
+    try:
+        from . import whatsapp, tournament as _t
+        t = _t.get_tournament(row["tournament_id"])
+        # Tras el swap, proposer tiene el equipo que era del receiver y viceversa.
+        p_new = _t.get_player(row["proposer_id"])
+        r_new = _t.get_player(row["receiver_id"])
+        if t and p_new and r_new:
+            whatsapp.send_text(
+                whatsapp.format_trade_executed(
+                    player_a=p_new["display_name"],
+                    team_a=r_new["team_name"],  # antes del swap, eran al revés
+                    player_b=r_new["display_name"],
+                    team_b=p_new["team_name"],
+                    tournament_name=t["name"],
+                )
+            )
+    except Exception:  # noqa: BLE001
+        import logging
+        logging.getLogger("futmasters.whatsapp").exception(
+            "trade notify failed for %s", trade_id
+        )

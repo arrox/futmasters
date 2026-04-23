@@ -468,6 +468,20 @@ export const api = {
       { method: "DELETE" },
       true,
     ),
+
+  // WhatsApp
+  whatsappStatus: () =>
+    request<{ configured: boolean; recipients_count: number }>(
+      "/admin/whatsapp/status",
+      undefined,
+      true,
+    ),
+  whatsappTest: (text?: string) =>
+    request<{ sent: boolean; backend: string; detail: string; message_sids: string[] }>(
+      "/admin/whatsapp/test",
+      { method: "POST", body: JSON.stringify({ text }) },
+      true,
+    ),
 };
 
 export interface Registration {

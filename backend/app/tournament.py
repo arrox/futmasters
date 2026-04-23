@@ -14,6 +14,7 @@ Flujo típico:
 from __future__ import annotations
 
 import json
+import os
 import secrets
 import uuid
 from datetime import datetime, timezone
@@ -171,6 +172,30 @@ def create_from_sorteo(
     # Nota: los welcome emails se mandan en POST /api/sorteo, no acá.
     # Así el participante recibe su equipo apenas se sortea, sin esperar a
     # que el admin cree el shell del torneo.
+
+    # Anuncio de lanzamiento del torneo por WhatsApp (best-effort).
+    try:
+        from . import whatsapp
+        base = os.environ.get("PUBLIC_BASE_URL", "").rstrip("/")
+        fmt_label = {
+            FORMAT_GROUPS_KO: "Grupos + eliminación directa",
+            FORMAT_LEAGUE: "Liga todos contra todos",
+            FORMAT_KNOCKOUT: "Eliminación directa",
+        }.get(fmt, fmt)
+        body = whatsapp.format_tournament_launched(
+            tournament_name=t["name"],
+            format_label=fmt_label,
+            num_participants=n,
+            assignments=result["assignments"],
+            tournament_url=f"{base}/t/{t['id']}" if base else None,
+        )
+        whatsapp.send_text(body)
+    except Exception:  # noqa: BLE001
+        import logging
+        logging.getLogger("futmasters.whatsapp").exception(
+            "launch notify failed for %s", t["id"]
+        )
+
     return get_tournament(t["id"])
 
 
@@ -557,7 +582,76 @@ def set_match_result(match_id: int, home_score: int, away_score: int) -> dict:
         )
     # Si el partido era de bracket, propagamos ganador al siguiente slot.
     _propagate_bracket_winner(match_id)
+
+    # Notificación WhatsApp best-effort.
+    _notify_match_result(match_id)
     return get_match(match_id)
+
+
+def _notify_match_result(match_id: int) -> None:
+    """Dispara notificación WhatsApp del resultado. Silencioso en fallos."""
+    try:
+        from . import whatsapp
+        m = get_match(match_id)
+        if not m or m["status"] != "played":
+            return
+        home = get_player(m["home_player_id"])
+        away = get_player(m["away_player_id"])
+        t = get_tournament(m["tournament_id"])
+        if not (home and away and t):
+            return
+        base = os.environ.get("PUBLIC_BASE_URL", "").rstrip("/")
+        highlight = f"{base}/api/matches/{m['id']}/highlight.png" if base else None
+        t_url = f"{base}/t/{t['id']}" if base else None
+        body = whatsapp.format_match_result(
+            home_name=home["display_name"],
+            away_name=away["display_name"],
+            home_score=m["home_score"],
+            away_score=m["away_score"],
+            tournament_name=t["name"],
+            stage_label=_stage_label_for_whatsapp(m),
+            home_team=home["team_name"],
+            away_team=away["team_name"],
+            highlight_url=highlight,
+            tournament_url=t_url,
+        )
+        whatsapp.send_text(body)
+
+        # Si es final jugada → anuncio campeón
+        if m["stage"] == STAGE_FINAL:
+            winner = (
+                home if m["home_score"] > m["away_score"] else away
+                if m["home_score"] != m["away_score"] else None
+            )
+            if winner:
+                champ_body = whatsapp.format_champion(
+                    tournament_name=t["name"],
+                    champion_name=winner["display_name"],
+                    champion_team=winner["team_name"],
+                    tournament_url=t_url,
+                )
+                whatsapp.send_text(champ_body)
+    except Exception:  # noqa: BLE001
+        import logging
+        logging.getLogger("futmasters.whatsapp").exception(
+            "notify_match_result failed for match %s", match_id
+        )
+
+
+def _stage_label_for_whatsapp(m: dict) -> str:
+    stage = m["stage"]
+    if stage == "group":
+        return f"Grupo {m['group_label'] or ''} · Fecha {m['round_number']}"
+    if stage == "league":
+        return f"Fecha {m['round_number']}"
+    labels = {
+        "round_of_16": "Octavos de final",
+        "quarter": "Cuartos de final",
+        "semi": "Semifinal",
+        "final": "Final",
+        "third_place": "3° y 4° puesto",
+    }
+    return labels.get(stage, stage)
 
 
 def clear_match_result(match_id: int) -> dict:

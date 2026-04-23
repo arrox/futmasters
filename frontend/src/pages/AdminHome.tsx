@@ -14,20 +14,46 @@ export default function AdminHome() {
   const [regs, setRegs] = useState<Registration[]>([]);
   const [showCreate, setShowCreate] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [waStatus, setWaStatus] = useState<{
+    configured: boolean;
+    recipients_count: number;
+  } | null>(null);
+  const [waSending, setWaSending] = useState(false);
+  const [waMsg, setWaMsg] = useState<string | null>(null);
   const nav = useNavigate();
 
   async function load() {
     try {
-      const [ts, s, r] = await Promise.all([
+      const [ts, s, r, wa] = await Promise.all([
         api.listTournaments(),
         api.listSorteos(50, 0),
         api.adminListRegistrations(),
+        api.whatsappStatus().catch(() => null),
       ]);
       setTournaments(ts);
       setSorteos(s.items);
       setRegs(r);
+      setWaStatus(wa);
     } catch (e) {
       setErr((e as Error).message);
+    }
+  }
+
+  async function testWhatsApp() {
+    setWaSending(true);
+    setWaMsg(null);
+    try {
+      const r = await api.whatsappTest();
+      setWaMsg(
+        r.sent
+          ? `✓ ${r.detail}`
+          : `✗ ${r.detail}`,
+      );
+      setTimeout(() => setWaMsg(null), 6000);
+    } catch (e) {
+      setWaMsg(`✗ ${(e as Error).message}`);
+    } finally {
+      setWaSending(false);
     }
   }
 
@@ -113,6 +139,61 @@ export default function AdminHome() {
           </button>
         </div>
       </div>
+
+      {waStatus && (
+        <div className="fm-surface">
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <div>
+              <div className="fm-eyebrow">Notificaciones</div>
+              <h2 className="fm-h2 mt-1">WhatsApp</h2>
+            </div>
+            <div className="flex items-center gap-2">
+              <span
+                className={`chip ${
+                  waStatus.configured ? "chip--green" : ""
+                }`}
+              >
+                {waStatus.configured
+                  ? `✓ Twilio activo · ${waStatus.recipients_count} destinatarios`
+                  : "Twilio no configurado"}
+              </span>
+              <button
+                className="btn btn-ghost"
+                style={{ fontSize: 11, padding: "6px 12px" }}
+                onClick={testWhatsApp}
+                disabled={waSending}
+              >
+                {waSending ? "Enviando…" : "Probar"}
+              </button>
+            </div>
+          </div>
+          {waMsg && (
+            <div
+              className="mt-2 text-xs"
+              style={{
+                color: waMsg.startsWith("✓")
+                  ? "var(--fm-fut-green)"
+                  : "var(--fm-danger)",
+              }}
+            >
+              {waMsg}
+            </div>
+          )}
+          {!waStatus.configured && (
+            <p
+              className="text-xs mt-2"
+              style={{ color: "var(--fm-ink-muted)", lineHeight: 1.6 }}
+            >
+              Configura las variables de entorno{" "}
+              <code className="mono">TWILIO_ACCOUNT_SID</code>,{" "}
+              <code className="mono">TWILIO_AUTH_TOKEN</code>,{" "}
+              <code className="mono">TWILIO_FROM</code> y{" "}
+              <code className="mono">WHATSAPP_RECIPIENTS</code> en{" "}
+              <code>.env.local</code> y reinicia el backend.
+            </p>
+          )}
+        </div>
+      )}
 
       <div className="fm-surface">
         <div className="flex items-center justify-between mb-3">

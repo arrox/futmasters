@@ -24,7 +24,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 
-from . import audit, db, export, highlights, media, registrations, tournament, trades
+from . import (
+    audit, db, export, highlights, media, registrations, tournament, trades,
+    whatsapp as wa,
+)
 from .admin_auth import admin_password, require_admin
 from .bombos import build_bombos, compute_num_bombos
 from .pool_selector import describe_pool, select_effective_pool
@@ -397,6 +400,35 @@ def admin_status():
     return {
         "token": "",
         "configured": bool(pwd),
+    }
+
+
+@app.get(
+    "/api/admin/whatsapp/status",
+    dependencies=[Depends(require_admin)],
+)
+def admin_whatsapp_status():
+    return {
+        "configured": wa.twilio_configured(),
+        "recipients_count": len(wa.recipients()),
+    }
+
+
+@app.post(
+    "/api/admin/whatsapp/test",
+    dependencies=[Depends(require_admin)],
+)
+def admin_whatsapp_test(body: dict | None = None):
+    text = (body or {}).get("text") or (
+        "🏆 FutMasters — prueba de WhatsApp. Si ves este mensaje, la "
+        "integración con Twilio está funcionando."
+    )
+    result = wa.send_text(text)
+    return {
+        "sent": result.sent,
+        "backend": result.backend,
+        "detail": result.detail,
+        "message_sids": result.message_sids,
     }
 
 
