@@ -204,10 +204,30 @@ function CreateTournamentForm({
           value={format}
           onChange={(e) => setFormat(e.target.value as TournamentFormat)}
         >
-          <option value="groups_knockout">Grupos + eliminación directa</option>
+          <option value="groups_knockout">
+            Grupos + eliminación directa (Champions/Mundial)
+          </option>
+          <option value="knockout">
+            Eliminación directa (bracket puro, N potencia de 2)
+          </option>
           <option value="league">Liga todos contra todos</option>
         </select>
       </div>
+      {format === "knockout" && selected && (
+        <p
+          className="text-xs"
+          style={{
+            color: isPowerOf2(selected.num_participants)
+              ? "var(--fm-ink-muted)"
+              : "var(--fm-danger)",
+          }}
+        >
+          {selected.num_participants} participantes —{" "}
+          {isPowerOf2(selected.num_participants)
+            ? "✓ bracket válido"
+            : "✗ no es potencia de 2 (usá 2, 4, 8 o 16)"}
+        </p>
+      )}
       {format === "groups_knockout" && (
         <div className="grid grid-cols-2 gap-3">
           <div>
@@ -285,7 +305,12 @@ export function formatLabel(f: string): string {
   return (
     {
       groups_knockout: "Grupos + eliminación",
+      knockout: "Eliminación directa",
       league: "Liga",
     } as Record<string, string>
   )[f] ?? f;
+}
+
+function isPowerOf2(n: number): boolean {
+  return n > 0 && (n & (n - 1)) === 0;
 }

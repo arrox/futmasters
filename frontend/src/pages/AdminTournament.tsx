@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import type { Player, TournamentDetail } from "../api/client";
+import type { Player, Trade, TournamentDetail } from "../api/client";
 import { api } from "../api/client";
 import FixtureList from "../components/FixtureList";
 import StandingsTable from "../components/StandingsTable";
@@ -13,13 +13,19 @@ export default function AdminTournament() {
   const [data, setData] = useState<TournamentDetail | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [tab, setTab] = useState<
-    "jugadores" | "grupos" | "fixture" | "bracket"
+    "jugadores" | "grupos" | "fixture" | "bracket" | "trades"
   >("jugadores");
+  const [trades, setTrades] = useState<Trade[]>([]);
 
   const load = useCallback(async () => {
     if (!id) return;
     try {
-      setData(await api.getTournament(id));
+      const [d, ts] = await Promise.all([
+        api.getTournament(id),
+        api.adminListTrades(id).catch(() => [] as Trade[]),
+      ]);
+      setData(d);
+      setTrades(ts);
     } catch (e) {
       setErr((e as Error).message);
     }
@@ -124,7 +130,15 @@ export default function AdminTournament() {
       </div>
 
       <div className="flex gap-1 border-b border-soft/40 overflow-x-auto">
-        {(["jugadores", "grupos", "fixture", "bracket"] as const).map((x) => (
+        {(
+          [
+            "jugadores",
+            "grupos",
+            "fixture",
+            "bracket",
+            "trades",
+          ] as const
+        ).map((x) => (
           <button
             key={x}
             className={`px-4 py-2 text-sm border-b-2 transition-colors ${
@@ -140,6 +154,11 @@ export default function AdminTournament() {
                 grupos: "Posiciones",
                 fixture: "Partidos",
                 bracket: "Llaves",
+                trades: `Intercambios${
+                  trades.filter((t) => t.status === "pending" || t.status === "confirmed").length > 0
+                    ? ` (${trades.filter((t) => t.status === "pending" || t.status === "confirmed").length})`
+                    : ""
+                }`,
               }[x]
             }
           </button>
@@ -174,6 +193,13 @@ export default function AdminTournament() {
         />
       )}
 
+      {tab === "trades" && (
+        <AdminTrades
+          trades={trades}
+          onRefresh={load}
+        />
+      )}
+
       {tab === "bracket" && (
         <div className="space-y-6">
           <BracketView matches={matches} players={players} />
@@ -196,6 +222,234 @@ export default function AdminTournament() {
       )}
     </div>
   );
+}
+
+function AdminTrades({
+  trades,
+  onRefresh,
+}: {
+  trades: Trade[];
+  onRefresh: () => void;
+}) {
+  const [copied, setCopied] = useState<string | null>(null);
+  async function copy(text: string) {
+    await navigator.clipboard.writeText(text);
+    setCopied(text);
+    setTimeout(() => setCopied(null), 1500);
+  }
+  async function cancel(id: string) {
+    if (!window.confirm("¿Cancelar este intercambio?")) return;
+    try {
+      await api.adminCancelTrade(id);
+      onRefresh();
+    } catch (e) {
+      alert((e as Error).message);
+    }
+  }
+
+  async function authorize(id: string) {
+    if (!window.confirm("¿Autorizar y ejecutar este intercambio?")) return;
+    try {
+      await api.adminAuthorizeTrade(id);
+      onRefresh();
+    } catch (e) {
+      alert((e as Error).message);
+    }
+  }
+
+  if (trades.length === 0) {
+    return (
+      <div className="fm-surface">
+        <div className="fm-eyebrow mb-2">Trades</div>
+        <p style={{ color: "var(--fm-ink-muted)", fontSize: 13 }}>
+          No hay propuestas de intercambio. Cuando alguien proponga una,
+          vas a ver los magic-links para compartir si el mail no llegó.
+        </p>
+      </div>
+    );
+  }
+  return (
+    <div className="space-y-4">
+      {trades.map((t) => {
+        const pending =
+          t.status === "pending" ||
+          t.status === "confirmed" ||
+          t.status === "awaiting_admin";
+        return (
+          <div key={t.id} className="fm-surface">
+            <div className="flex items-start justify-between mb-3 gap-2 flex-wrap">
+              <div>
+                <div className="fm-eyebrow">
+                  {statusChipLabel(t.status)}
+                </div>
+                <h3
+                  className="fm-display"
+                  style={{ fontSize: 18, color: "var(--fm-gold)", marginTop: 2 }}
+                >
+                  {t.proposer.display_name} ↔ {t.receiver.display_name}
+                </h3>
+                <div className="text-xs text-slate-400 mt-1">
+                  <span className="mono">
+                    {new Date(t.created_at).toLocaleString()}
+                  </span>
+                  {" · expira "}
+                  <span className="mono">
+                    {new Date(t.expires_at).toLocaleString()}
+                  </span>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                {t.status === "awaiting_admin" && (
+                  <button
+                    className="btn btn-green text-xs"
+                    onClick={() => authorize(t.id)}
+                    style={{ boxShadow: "0 0 18px rgba(0,255,135,0.35)" }}
+                  >
+                    ✓ Autorizar
+                  </button>
+                )}
+                {pending && (
+                  <button
+                    className="btn btn-ghost text-xs"
+                    onClick={() => cancel(t.id)}
+                  >
+                    Cancelar
+                  </button>
+                )}
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+              <TradeSide
+                role="Propone"
+                p={t.proposer}
+                confirmedAt={t.proposer_confirmed_at}
+                token={t.proposer_token}
+                delivery={t.delivery?.proposer}
+                onCopy={copy}
+                copied={copied}
+              />
+              <TradeSide
+                role="Recibe"
+                p={t.receiver}
+                confirmedAt={t.receiver_confirmed_at}
+                token={t.receiver_token}
+                delivery={t.delivery?.receiver}
+                onCopy={copy}
+                copied={copied}
+              />
+            </div>
+            {t.message && (
+              <p
+                className="text-sm mt-3 italic"
+                style={{ color: "var(--fm-ink-muted)" }}
+              >
+                “{t.message}”
+              </p>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function TradeSide({
+  role,
+  p,
+  confirmedAt,
+  token,
+  delivery,
+  onCopy,
+  copied,
+}: {
+  role: string;
+  p: Trade["proposer"];
+  confirmedAt: string | null;
+  token?: string;
+  delivery?: { backend: string; detail: string; link: string | null };
+  onCopy: (s: string) => void;
+  copied: string | null;
+}) {
+  const link = delivery?.link;
+  return (
+    <div
+      style={{
+        border: "1px solid rgba(240,196,96,0.18)",
+        borderRadius: 10,
+        padding: 12,
+        background: "rgba(5,7,12,0.5)",
+      }}
+    >
+      <div className="flex items-center justify-between mb-2">
+        <span className="fm-eyebrow" style={{ fontSize: 10 }}>
+          {role}
+        </span>
+        {confirmedAt ? (
+          <span className="chip chip--green">✓ confirmó</span>
+        ) : (
+          <span className="chip">pendiente</span>
+        )}
+      </div>
+      <div className="font-medium">{p.display_name}</div>
+      <div className="text-xs text-slate-400 mb-2">
+        {p.team_name} · OVR {p.team_ovr} · Bombo {p.bombo}
+      </div>
+      {p.email_hint && (
+        <div className="text-xs mono" style={{ color: "var(--fm-ink-muted)" }}>
+          {p.email_hint}
+        </div>
+      )}
+      {link && (
+        <div className="mt-2">
+          <div
+            className="fm-eyebrow"
+            style={{ fontSize: 9, marginBottom: 4 }}
+          >
+            Magic link
+          </div>
+          <div className="flex gap-1">
+            <input
+              readOnly
+              className="input flex-1 mono"
+              style={{ fontSize: 10 }}
+              value={link}
+              onClick={(e) => (e.currentTarget as HTMLInputElement).select()}
+            />
+            <button
+              className="btn btn-ghost text-xs"
+              onClick={() => onCopy(link)}
+            >
+              {copied === link ? "✓" : "copiar"}
+            </button>
+          </div>
+          <div
+            className="text-xs mt-1"
+            style={{
+              color:
+                delivery?.backend === "smtp"
+                  ? "var(--fm-fut-green)"
+                  : "var(--fm-warning)",
+            }}
+          >
+            {delivery?.detail}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function statusChipLabel(s: string): string {
+  return (
+    {
+      pending: "Pendiente",
+      confirmed: "Esperando 2da firma",
+      awaiting_admin: "Esperando autorización admin",
+      executed: "Ejecutado",
+      cancelled: "Cancelado",
+      expired: "Expirado",
+    } as Record<string, string>
+  )[s] ?? s;
 }
 
 function PlayersGrid({
@@ -224,6 +478,9 @@ function PlayerAdminCard({
   const [uploading, setUploading] = useState(false);
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(player.display_name);
+  const [email, setEmail] = useState(player.email ?? "");
+  const [savingEmail, setSavingEmail] = useState(false);
+  const [emailMsg, setEmailMsg] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
@@ -258,6 +515,21 @@ function PlayerAdminCard({
       onUpdated();
     } catch (err) {
       alert((err as Error).message);
+    }
+  }
+
+  async function saveEmail() {
+    setEmailMsg(null);
+    setSavingEmail(true);
+    try {
+      await api.updatePlayer(player.id, { email: email.trim() || null });
+      setEmailMsg("✓ guardado");
+      setTimeout(() => setEmailMsg(null), 1800);
+      onUpdated();
+    } catch (err) {
+      setEmailMsg((err as Error).message);
+    } finally {
+      setSavingEmail(false);
     }
   }
 
@@ -322,6 +594,44 @@ function PlayerAdminCard({
           >
             ✕
           </button>
+        )}
+      </div>
+      <div className="w-full">
+        <label
+          className="fm-eyebrow block mb-1"
+          style={{ fontSize: 9 }}
+        >
+          Email (para confirmar intercambios)
+        </label>
+        <div className="flex gap-1">
+          <input
+            type="email"
+            className="input flex-1"
+            style={{ fontSize: 12 }}
+            placeholder="jugador@email.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+          <button
+            className="btn btn-ghost text-xs"
+            onClick={saveEmail}
+            disabled={savingEmail || email === (player.email ?? "")}
+          >
+            ✓
+          </button>
+        </div>
+        {emailMsg && (
+          <div
+            style={{
+              fontSize: 10,
+              marginTop: 4,
+              color: emailMsg.startsWith("✓")
+                ? "var(--fm-fut-green)"
+                : "var(--fm-danger)",
+            }}
+          >
+            {emailMsg}
+          </div>
         )}
       </div>
     </div>

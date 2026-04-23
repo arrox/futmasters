@@ -37,8 +37,20 @@ export default function FixtureList({
   return (
     <div className="space-y-4">
       {keys.map((k) => (
-        <div key={k} className="card">
-          <h3 className="font-semibold text-accent mb-3">{k}</h3>
+        <div key={k} className="fm-surface">
+          <div className="mb-3">
+            <div className="fm-eyebrow">Fixture</div>
+            <h3
+              className="fm-display"
+              style={{
+                fontSize: 18,
+                color: "var(--fm-gold)",
+                marginTop: 2,
+              }}
+            >
+              {k}
+            </h3>
+          </div>
           <ul className="space-y-2">
             {rounds[k].map((m) => (
               <MatchRow

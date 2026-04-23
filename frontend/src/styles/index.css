@@ -2,93 +2,703 @@
 @tailwind components;
 @tailwind utilities;
 
+/* =====================================================================
+ * FUT 26 — Tokens (colors, type, bg image, motion)
+ * Basado en /project/colors_and_type.css del design system.
+ * ===================================================================== */
+:root {
+  /* Shell */
+  --fm-bg: #05070c;
+  --fm-bg2: #0b111a;
+  --fm-bg3: #131a26;
+  --fm-ink: #f4efe1;
+  --fm-ink-muted: #a9a395;
+  --fm-ink-dim: #6c6657;
+  --fm-ink-dark: #2a2820;
+
+  /* Gold */
+  --fm-gold: #f0c460;
+  --fm-gold-deep: #caa24b;
+  --fm-gold-dark: #7a5c1e;
+  --fm-gold-glow: rgba(240, 196, 96, 0.45);
+  --fm-gold-grad: linear-gradient(
+    135deg,
+    #f8d88a 0%,
+    #e4b553 40%,
+    #b8862e 100%
+  );
+  --fm-gold-metal: linear-gradient(
+    180deg,
+    #fff1c1 0%,
+    #f0c460 25%,
+    #b8862e 75%,
+    #8a5a1a 100%
+  );
+
+  /* Silver */
+  --fm-silver: #d8dde3;
+  --fm-silver-dark: #8a93a0;
+  --fm-silver-grad: linear-gradient(
+    135deg,
+    #f2f4f7 0%,
+    #c5ccd4 40%,
+    #7e8691 100%
+  );
+
+  /* Bronze */
+  --fm-bronze: #c97a4a;
+  --fm-bronze-grad: linear-gradient(
+    135deg,
+    #e8a06b 0%,
+    #bf6e38 40%,
+    #7a4220 100%
+  );
+
+  /* TOTW */
+  --fm-totw: #0e2a6b;
+  --fm-totw-accent: #6ec5ff;
+  --fm-totw-grad: linear-gradient(
+    135deg,
+    #1a3a9a 0%,
+    #0e2a6b 45%,
+    #04122f 100%
+  );
+
+  /* Icon */
+  --fm-icon-gold: #e8c56a;
+  --fm-icon-grad: linear-gradient(135deg, #2a241a 0%, #0f0c08 45%, #000 100%);
+
+  /* Hero */
+  --fm-hero-grad: linear-gradient(
+    135deg,
+    #1b3cb3 0%,
+    #0b1a4a 50%,
+    #020820 100%
+  );
+
+  /* FUT green */
+  --fm-fut-green: #00ff87;
+  --fm-fut-green-dark: #00b35e;
+
+  /* Semantic */
+  --fm-danger: #ff3b5c;
+  --fm-warning: #ffb547;
+  --fm-success: var(--fm-fut-green);
+
+  /* Type */
+  --fm-font-display: "Oswald", "Saira Condensed", Impact, sans-serif;
+  --fm-font-sans: "Saira Condensed", "Inter", system-ui, sans-serif;
+  --fm-font-body: "Inter", system-ui, -apple-system, sans-serif;
+  --fm-font-mono: "JetBrains Mono", Menlo, monospace;
+
+  /* Shadows */
+  --fm-shadow-card: 0 4px 12px rgba(0, 0, 0, 0.5),
+    0 20px 60px rgba(0, 0, 0, 0.35);
+  --fm-shadow-gold: 0 0 0 1px rgba(240, 196, 96, 0.45),
+    0 0 32px rgba(240, 196, 96, 0.25), 0 10px 40px rgba(0, 0, 0, 0.6);
+  --fm-shadow-totw: 0 0 0 1px rgba(110, 197, 255, 0.45),
+    0 0 32px rgba(110, 197, 255, 0.3);
+  --fm-shadow-icon: 0 0 0 1px rgba(232, 197, 106, 0.45),
+    0 0 40px rgba(232, 197, 106, 0.35);
+
+  /* Stadium bokeh + pitch lines */
+  --fm-bg-image: radial-gradient(
+      circle at 12% 18%,
+      rgba(240, 196, 96, 0.14) 0,
+      transparent 18%
+    ),
+    radial-gradient(
+      circle at 88% 22%,
+      rgba(110, 197, 255, 0.1) 0,
+      transparent 22%
+    ),
+    radial-gradient(
+      circle at 30% 82%,
+      rgba(0, 255, 135, 0.07) 0,
+      transparent 25%
+    ),
+    radial-gradient(
+      circle at 72% 78%,
+      rgba(255, 255, 255, 0.06) 0,
+      transparent 20%
+    ),
+    radial-gradient(
+      circle at 50% 50%,
+      rgba(15, 25, 40, 0.6) 0,
+      transparent 70%
+    ),
+    linear-gradient(180deg, #03060b 0%, #05070c 40%, #0a0f18 100%);
+
+  --fm-pitch-lines: repeating-linear-gradient(
+    90deg,
+    transparent 0,
+    transparent 119px,
+    rgba(240, 196, 96, 0.025) 119px,
+    rgba(240, 196, 96, 0.025) 120px
+  );
+
+  /* Easings */
+  --fm-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --fm-ease-pop: cubic-bezier(0.2, 1.35, 0.3, 1);
+  --fm-ease-sharp: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* =====================================================================
+ * Base
+ * ===================================================================== */
 html {
-  font-family: "Inter", system-ui, sans-serif;
+  font-family: var(--fm-font-body);
   font-feature-settings: "cv11", "ss01";
 }
 
 body {
-  @apply bg-bg text-slate-100 min-h-screen;
-  background-image: radial-gradient(
-      ellipse at 20% -10%,
-      rgba(0, 212, 255, 0.08),
-      transparent 50%
-    ),
-    radial-gradient(ellipse at 100% 0%, rgba(255, 107, 107, 0.05), transparent 40%);
+  min-height: 100vh;
+  color: var(--fm-ink);
+  background-color: var(--fm-bg);
+  background-image: var(--fm-bg-image), var(--fm-pitch-lines);
   background-attachment: fixed;
+  background-size: auto, auto;
 }
 
+/* =====================================================================
+ * Typography primitives
+ * ===================================================================== */
 @layer components {
-  .card {
-    @apply bg-bg2/80 backdrop-blur rounded-xl p-5 border border-soft shadow-glow transition-shadow;
+  .fm-display {
+    font-family: var(--fm-font-display);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    line-height: 0.95;
   }
-  .card:hover {
-    @apply shadow-glow-strong;
+  .fm-h1 {
+    font-family: var(--fm-font-display);
+    font-weight: 700;
+    font-size: 44px;
+    line-height: 1;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
   }
-  .btn {
-    @apply inline-flex items-center gap-2 px-4 py-2 rounded-md font-medium transition-all;
+  .fm-h2 {
+    font-family: var(--fm-font-display);
+    font-weight: 600;
+    font-size: 22px;
+    line-height: 1.1;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
   }
-  .btn-primary {
-    @apply bg-accent text-bg hover:bg-cyan-300 disabled:bg-slate-600 disabled:text-slate-400 disabled:cursor-not-allowed;
+  .fm-eyebrow {
+    font-family: var(--fm-font-sans);
+    font-weight: 700;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    color: var(--fm-ink-muted);
   }
-  .btn-ghost {
-    @apply border border-soft text-slate-100 hover:bg-accent/10;
-  }
-  .btn-danger {
-    @apply bg-coral text-bg hover:bg-red-400;
-  }
-  .input {
-    @apply bg-bg2 border border-soft rounded-md px-3 py-2 text-slate-100
-           placeholder:text-slate-500 focus:outline-none focus:border-accent
-           focus:ring-2 focus:ring-accent/30 transition;
-  }
-  .chip {
-    @apply inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs
-           border border-soft bg-bg2/60 font-medium;
+  .fm-mono {
+    font-family: var(--fm-font-mono);
+    font-size: 12px;
   }
   .mono {
-    font-family: "JetBrains Mono", monospace;
+    font-family: var(--fm-font-mono);
+  }
+  .fm-gold-text {
+    color: var(--fm-gold);
+  }
+  .fm-gold-metal-text {
+    background: var(--fm-gold-metal);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+  }
+
+  /* =====================================================================
+   * Surfaces — equivalente a .card del tema anterior
+   * ===================================================================== */
+  .card,
+  .fm-surface {
+    position: relative;
+    background: linear-gradient(
+      180deg,
+      rgba(19, 26, 38, 0.95),
+      rgba(11, 17, 26, 0.95)
+    );
+    border: 1px solid rgba(240, 196, 96, 0.18);
+    border-radius: 14px;
+    padding: 20px;
+    backdrop-filter: blur(2px);
+    transition: box-shadow 0.25s var(--fm-ease-out),
+      border-color 0.25s var(--fm-ease-out);
+  }
+  .card::before,
+  .fm-surface::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(
+      135deg,
+      rgba(240, 196, 96, 0.05),
+      transparent 50%
+    );
+    pointer-events: none;
+  }
+  .card:hover,
+  .fm-surface:hover {
+    border-color: rgba(240, 196, 96, 0.35);
+    box-shadow: 0 0 0 1px rgba(240, 196, 96, 0.28),
+      0 0 32px rgba(240, 196, 96, 0.12);
+  }
+
+  .fm-bar-gold {
+    height: 3px;
+    background: var(--fm-gold-metal);
+    border-radius: 2px;
+  }
+
+  /* =====================================================================
+   * Buttons (mantiene nombres .btn, .btn-primary, etc para no romper)
+   * ===================================================================== */
+  .btn,
+  .fm-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 18px;
+    border: 0;
+    cursor: pointer;
+    font-family: var(--fm-font-sans);
+    font-weight: 700;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    border-radius: 4px;
+    transition: transform 0.12s var(--fm-ease-sharp),
+      filter 0.15s, background-color 0.15s;
+    text-decoration: none;
+  }
+  .btn:hover,
+  .fm-btn:hover {
+    transform: translateY(-1px);
+    filter: brightness(1.08);
+  }
+  .btn:active,
+  .fm-btn:active {
+    transform: translateY(0);
+    filter: brightness(0.95);
+  }
+  .btn:disabled,
+  .fm-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    transform: none;
+    filter: grayscale(0.5);
+  }
+
+  .btn-primary,
+  .fm-btn-primary {
+    background: var(--fm-gold-metal);
+    color: var(--fm-ink-dark);
+    box-shadow: 0 0 20px rgba(240, 196, 96, 0.25);
+  }
+  .btn-green,
+  .fm-btn-green {
+    background: linear-gradient(180deg, #00ff87 0%, #00b35e 100%);
+    color: #04160b;
+    box-shadow: 0 0 24px rgba(0, 255, 135, 0.35);
+  }
+  .btn-ghost,
+  .fm-btn-ghost {
+    background: transparent;
+    color: var(--fm-ink);
+    border: 1px solid rgba(240, 196, 96, 0.35);
+  }
+  .btn-ghost:hover,
+  .fm-btn-ghost:hover {
+    background: rgba(240, 196, 96, 0.08);
+  }
+  .btn-danger,
+  .fm-btn-danger {
+    background: linear-gradient(180deg, #ff5c78, #d01a3a);
+    color: #fff;
+  }
+
+  /* =====================================================================
+   * Inputs
+   * ===================================================================== */
+  .input,
+  .fm-input {
+    background: rgba(5, 7, 12, 0.7);
+    border: 1px solid rgba(240, 196, 96, 0.22);
+    border-radius: 4px;
+    padding: 10px 14px;
+    color: var(--fm-ink);
+    font-family: var(--fm-font-body);
+    font-size: 14px;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .input:focus,
+  .fm-input:focus {
+    outline: none;
+    border-color: var(--fm-gold);
+    box-shadow: 0 0 0 2px rgba(240, 196, 96, 0.25);
+  }
+  .input::placeholder,
+  .fm-input::placeholder {
+    color: var(--fm-ink-dim);
+  }
+
+  /* =====================================================================
+   * Chips
+   * ===================================================================== */
+  .chip,
+  .fm-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 9999px;
+    font-family: var(--fm-font-sans);
+    font-weight: 600;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    background: rgba(240, 196, 96, 0.1);
+    color: var(--fm-gold);
+    border: 1px solid rgba(240, 196, 96, 0.35);
+  }
+  .chip--totw,
+  .fm-chip--totw {
+    background: rgba(110, 197, 255, 0.1);
+    color: var(--fm-totw-accent);
+    border-color: rgba(110, 197, 255, 0.4);
+  }
+  .chip--icon,
+  .fm-chip--icon {
+    background: rgba(232, 197, 106, 0.08);
+    color: var(--fm-icon-gold);
+    border-color: rgba(232, 197, 106, 0.35);
+  }
+  .chip--green,
+  .fm-chip--green {
+    background: rgba(0, 255, 135, 0.12);
+    color: var(--fm-fut-green);
+    border-color: rgba(0, 255, 135, 0.4);
+  }
+  .chip--danger {
+    background: rgba(255, 59, 92, 0.1);
+    color: var(--fm-danger);
+    border-color: rgba(255, 59, 92, 0.4);
   }
 }
 
+/* =====================================================================
+ * FUT Card — octagonal clip, metallic backgrounds, shine sweep
+ * ===================================================================== */
+.fut-card {
+  position: relative;
+  width: 220px;
+  height: 310px;
+  color: var(--fm-ink-dark);
+  font-family: var(--fm-font-sans);
+  clip-path: polygon(
+    14px 0,
+    calc(100% - 14px) 0,
+    100% 14px,
+    100% calc(100% - 14px),
+    calc(100% - 14px) 100%,
+    14px 100%,
+    0 calc(100% - 14px),
+    0 14px
+  );
+  box-shadow: var(--fm-shadow-gold);
+  transition: transform 0.25s var(--fm-ease-out);
+  flex: none;
+}
+.fut-card:hover {
+  transform: translateY(-2px);
+}
+.fut-card--gold {
+  background: var(--fm-gold-metal);
+  color: #3a2a0a;
+}
+.fut-card--silver {
+  background: var(--fm-silver-grad);
+  color: #1d232a;
+}
+.fut-card--bronze {
+  background: var(--fm-bronze-grad);
+  color: #2a180a;
+}
+.fut-card--totw {
+  background: var(--fm-totw-grad);
+  color: var(--fm-ink);
+  box-shadow: var(--fm-shadow-totw);
+}
+.fut-card--icon {
+  background: var(--fm-icon-grad);
+  color: var(--fm-icon-gold);
+  box-shadow: var(--fm-shadow-icon);
+}
+.fut-card--hero {
+  background: var(--fm-hero-grad);
+  color: var(--fm-gold);
+  box-shadow: 0 0 0 1px rgba(240, 196, 96, 0.5),
+    0 0 32px rgba(240, 196, 96, 0.3);
+}
+.fut-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    120deg,
+    transparent 35%,
+    rgba(255, 255, 255, 0.18) 48%,
+    rgba(255, 255, 255, 0.05) 52%,
+    transparent 60%
+  );
+  pointer-events: none;
+}
+.fut-card__top {
+  padding: 14px 18px 0;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 10px;
+  position: relative;
+  z-index: 1;
+}
+.fut-card__ovr {
+  font-family: var(--fm-font-display);
+  font-weight: 700;
+  font-size: 50px;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  grid-row: 1;
+}
+.fut-card__pos {
+  font-family: var(--fm-font-display);
+  font-weight: 600;
+  font-size: 18px;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  grid-row: 2;
+  margin-top: 4px;
+}
+.fut-card__crest {
+  grid-row: 1 / span 2;
+  grid-column: 2;
+  justify-self: end;
+  width: 72px;
+  height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--fm-font-display);
+  font-weight: 700;
+  font-size: 24px;
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  overflow: hidden;
+}
+.fut-card__crest img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+.fut-card__mid {
+  margin: 14px 18px 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, currentColor, transparent);
+  opacity: 0.4;
+  position: relative;
+  z-index: 1;
+}
+.fut-card__name {
+  margin: 12px 14px 0;
+  font-family: var(--fm-font-display);
+  font-weight: 700;
+  font-size: 22px;
+  line-height: 1;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  position: relative;
+  z-index: 1;
+}
+.fut-card__team {
+  margin: 4px 14px 0;
+  font-family: var(--fm-font-sans);
+  font-weight: 500;
+  font-size: 10px;
+  line-height: 1.1;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  opacity: 0.75;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  position: relative;
+  z-index: 1;
+}
+.fut-card__stats {
+  position: absolute;
+  bottom: 14px;
+  left: 14px;
+  right: 14px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+  font-family: var(--fm-font-sans);
+  font-weight: 700;
+  font-size: 13px;
+  text-align: center;
+  line-height: 1.1;
+  z-index: 1;
+}
+.fut-card__stats .s-val {
+  font-size: 16px;
+}
+.fut-card__stats .s-lbl {
+  font-size: 9px;
+  letter-spacing: 0.15em;
+  opacity: 0.75;
+}
+/* Small */
+.fut-card--sm {
+  width: 150px;
+  height: 212px;
+}
+.fut-card--sm .fut-card__ovr {
+  font-size: 34px;
+}
+.fut-card--sm .fut-card__pos {
+  font-size: 13px;
+}
+.fut-card--sm .fut-card__crest {
+  width: 48px;
+  height: 48px;
+  font-size: 16px;
+  border-width: 1.5px;
+}
+.fut-card--sm .fut-card__name {
+  font-size: 14px;
+  margin-top: 6px;
+}
+.fut-card--sm .fut-card__stats {
+  font-size: 10px;
+  bottom: 10px;
+}
+.fut-card--sm .fut-card__stats .s-val {
+  font-size: 12px;
+}
+.fut-card--sm .fut-card__stats .s-lbl {
+  font-size: 7px;
+}
+/* Large */
+.fut-card--lg {
+  width: 300px;
+  height: 422px;
+}
+.fut-card--lg .fut-card__ovr {
+  font-size: 72px;
+}
+.fut-card--lg .fut-card__pos {
+  font-size: 24px;
+}
+.fut-card--lg .fut-card__crest {
+  width: 96px;
+  height: 96px;
+  font-size: 32px;
+}
+.fut-card--lg .fut-card__name {
+  font-size: 30px;
+}
+
+/* =====================================================================
+ * Pack Reveal effects
+ * ===================================================================== */
+.fm-rays {
+  position: absolute;
+  inset: -50%;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg,
+    rgba(240, 196, 96, 0.18) 15deg,
+    transparent 30deg,
+    transparent 60deg,
+    rgba(240, 196, 96, 0.12) 75deg,
+    transparent 90deg
+  );
+  animation: rays 12s linear infinite;
+  pointer-events: none;
+  opacity: 0.8;
+}
+
+@keyframes rays {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.fm-shimmer-bg {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.35) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 2.2s linear infinite;
+}
+
+/* Tier row highlights en tablas */
+.bombo-row-1 {
+  background-color: rgba(240, 196, 96, 0.06);
+}
+.bombo-row-2 {
+  background-color: rgba(216, 221, 227, 0.04);
+}
+.bombo-row-3 {
+  background-color: rgba(201, 122, 74, 0.05);
+}
+.bombo-row-4 {
+  background-color: rgba(14, 42, 107, 0.15);
+}
 .bombo-card-1 {
   background: linear-gradient(
     135deg,
-    rgba(0, 212, 255, 0.18),
-    rgba(0, 212, 255, 0.02)
+    rgba(240, 196, 96, 0.16),
+    rgba(240, 196, 96, 0.02)
   );
 }
 .bombo-card-2 {
   background: linear-gradient(
     135deg,
-    rgba(106, 190, 255, 0.14),
-    rgba(106, 190, 255, 0.02)
+    rgba(216, 221, 227, 0.12),
+    rgba(216, 221, 227, 0.02)
   );
 }
 .bombo-card-3 {
   background: linear-gradient(
     135deg,
-    rgba(167, 139, 250, 0.14),
-    rgba(167, 139, 250, 0.02)
+    rgba(201, 122, 74, 0.14),
+    rgba(201, 122, 74, 0.02)
   );
 }
 .bombo-card-4 {
   background: linear-gradient(
     135deg,
-    rgba(255, 107, 107, 0.12),
-    rgba(255, 107, 107, 0.02)
+    rgba(14, 42, 107, 0.22),
+    rgba(110, 197, 255, 0.04)
   );
-}
-
-.bombo-row-1 {
-  background-color: rgba(0, 212, 255, 0.06);
-}
-.bombo-row-2 {
-  background-color: rgba(106, 190, 255, 0.05);
-}
-.bombo-row-3 {
-  background-color: rgba(167, 139, 250, 0.05);
-}
-.bombo-row-4 {
-  background-color: rgba(255, 107, 107, 0.05);
 }

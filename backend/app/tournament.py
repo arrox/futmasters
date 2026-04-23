@@ -25,6 +25,7 @@ from .fixture import round_robin_pairs, knockout_bracket
 
 FORMAT_GROUPS_KO = "groups_knockout"
 FORMAT_LEAGUE = "league"
+FORMAT_KNOCKOUT = "knockout"  # eliminación directa desde el pitazo
 
 STATUS_DRAFT = "draft"
 STATUS_GROUPS = "groups"
@@ -62,7 +63,7 @@ def create_tournament(
     double_round: bool = False,
 ) -> dict:
     """Crea el registro del torneo vacío."""
-    if fmt not in (FORMAT_GROUPS_KO, FORMAT_LEAGUE):
+    if fmt not in (FORMAT_GROUPS_KO, FORMAT_LEAGUE, FORMAT_KNOCKOUT):
         raise ValueError("Formato inválido")
     t_id = str(uuid.uuid4())
     now = _now()
@@ -110,6 +111,11 @@ def create_from_sorteo(
             )
         if qualify_per_group < 1 or qualify_per_group > (n // num_groups):
             raise ValueError("qualify_per_group inválido")
+    elif fmt == FORMAT_KNOCKOUT:
+        if n & (n - 1) != 0:
+            raise ValueError(
+                f"Eliminación directa requiere N potencia de 2 ({n} participantes no lo es: usá 2, 4, 8, 16)"
+            )
 
     t = create_tournament(
         name=name,
@@ -117,11 +123,30 @@ def create_from_sorteo(
         fmt=fmt,
         num_groups=num_groups if fmt == FORMAT_GROUPS_KO else 0,
         qualify_per_group=qualify_per_group if fmt == FORMAT_GROUPS_KO else 0,
-        double_round=double_round,
+        double_round=double_round if fmt != FORMAT_KNOCKOUT else False,
     )
 
     # Mapa equipo -> (type, att, mid, def) para persistir stats.
     pool_by_name = {t["name"]: t for t in result["pool"]}
+
+    # Emails pueden venir en assignments[*].email (si el sorteo los capturó)
+    # o en participants_ext (lista original).
+    email_by_name: dict[str, str] = {}
+    for p in result.get("participants_ext") or []:
+        if p.get("email"):
+            email_by_name[p["name"]] = p["email"]
+    for a in result.get("assignments", []):
+        if a.get("email") and a["participant"] not in email_by_name:
+            email_by_name[a["participant"]] = a["email"]
+
+    # Generar avatar auto para cada participante (se reemplaza si suben foto real).
+    from . import media as _media
+    avatars: dict[str, str] = {}
+    for a in result["assignments"]:
+        try:
+            avatars[a["participant"]] = _media.generate_avatar_for(a["participant"])
+        except Exception:  # noqa: BLE001
+            avatars[a["participant"]] = None  # type: ignore
 
     with db.get_conn() as conn:
         for a in result["assignments"]:
@@ -131,15 +156,38 @@ def create_from_sorteo(
                 INSERT INTO players (
                     tournament_id, display_name, team_name, team_type,
                     team_ovr, team_att, team_mid, team_def,
-                    bombo, pick_order
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    bombo, pick_order, email, photo_filename
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     t["id"], a["participant"], team["name"], team["type"],
                     team["ovr"], team["att"], team["mid"], team["def"],
                     a["bombo"], a["pick_order"],
+                    email_by_name.get(a["participant"]),
+                    avatars.get(a["participant"]),
                 ),
             )
+
+    # Welcome emails (si hay emails y SMTP configurado). Errores no bloquean.
+    try:
+        from . import mailer
+        if email_by_name:
+            players_created = list_players(t["id"])
+            for p in players_created:
+                if p.get("email"):
+                    try:
+                        mailer.send_welcome_email(
+                            to_addr=p["email"],
+                            player_name=p["display_name"],
+                            team_name=p["team_name"],
+                            team_ovr=p["team_ovr"],
+                            tournament_name=t["name"],
+                        )
+                    except Exception:  # noqa: BLE001
+                        pass
+    except Exception:  # noqa: BLE001
+        pass
+
     return get_tournament(t["id"])
 
 
@@ -203,7 +251,7 @@ def get_player(player_id: int) -> Optional[dict]:
 
 
 def update_player(player_id: int, **fields) -> Optional[dict]:
-    allowed = {"display_name", "photo_filename", "group_label"}
+    allowed = {"display_name", "photo_filename", "group_label", "email"}
     updates = {k: v for k, v in fields.items() if k in allowed}
     if not updates:
         return get_player(player_id)
@@ -342,6 +390,90 @@ def generate_group_fixture(t_id: str, regenerate: bool = False) -> List[dict]:
                             """,
                             (t_id, STAGE_GROUP, round_idx + offset, label, away_id, home_id),
                         )
+    return list_matches(t_id)
+
+
+def generate_knockout_fixture(t_id: str, regenerate: bool = False) -> List[dict]:
+    """Bracket directo desde el sorteo. Siembra 1 vs N, 2 vs N-1, ..."""
+    t = get_tournament(t_id)
+    if not t:
+        raise ValueError("Torneo no encontrado")
+    if t["format"] != FORMAT_KNOCKOUT:
+        raise ValueError("Solo aplica a formato 'knockout'")
+    players = list_players(t_id)
+    n = len(players)
+    if n & (n - 1) != 0:
+        raise ValueError(f"N ({n}) debe ser potencia de 2")
+
+    with db.get_conn() as conn:
+        existing = conn.execute(
+            "SELECT COUNT(*) AS c FROM matches WHERE tournament_id = ?",
+            (t_id,),
+        ).fetchone()
+        if existing["c"] > 0 and not regenerate:
+            raise ValueError("Ya hay bracket generado. Pasá regenerate=True.")
+        if regenerate:
+            conn.execute(
+                "DELETE FROM matches WHERE tournament_id = ?",
+                (t_id,),
+            )
+
+        # Orden de pick del sorteo como siembra: 1 vs N, 2 vs N-1, ...
+        seeded = sorted(players, key=lambda p: p["pick_order"])
+        first_round_pairs = [
+            (seeded[i]["id"], seeded[n - 1 - i]["id"])
+            for i in range(n // 2)
+        ]
+        total_rounds = 0
+        c = n // 2
+        while c >= 1:
+            total_rounds += 1
+            c //= 2
+        # total_rounds: para n=8 → 3 (QF, SF, F). para n=4 → 2 (SF, F).
+
+        for pos, (home_id, away_id) in enumerate(first_round_pairs):
+            conn.execute(
+                """
+                INSERT INTO matches (
+                    tournament_id, stage, round_number,
+                    home_player_id, away_player_id,
+                    slot_home, slot_away, bracket_position, status
+                ) VALUES (?, ?, 1, ?, ?, ?, ?, ?, 'scheduled')
+                """,
+                (
+                    t_id,
+                    _stage_for_round(total_rounds, 0),
+                    home_id, away_id,
+                    f"S{pos*2+1}", f"S{pos*2+2}",
+                    pos,
+                ),
+            )
+        # Rondas siguientes con slots W_{r}_{p} para el caller.
+        prev_count = len(first_round_pairs)
+        for round_idx in range(1, total_rounds):
+            for p in range(prev_count // 2):
+                conn.execute(
+                    """
+                    INSERT INTO matches (
+                        tournament_id, stage, round_number,
+                        slot_home, slot_away, bracket_position, status
+                    ) VALUES (?, ?, ?, ?, ?, ?, 'scheduled')
+                    """,
+                    (
+                        t_id,
+                        _stage_for_round(total_rounds, round_idx),
+                        round_idx + 1,
+                        f"W_{round_idx - 1}_{p * 2}",
+                        f"W_{round_idx - 1}_{p * 2 + 1}",
+                        p,
+                    ),
+                )
+            prev_count //= 2
+
+        conn.execute(
+            "UPDATE tournaments SET status = ? WHERE id = ?",
+            (STATUS_KNOCKOUT, t_id),
+        )
     return list_matches(t_id)
 
 
@@ -659,19 +791,26 @@ def _stage_for_round(total_rounds: int, round_idx: int) -> str:
 
 
 def _propagate_bracket_winner(match_id: int) -> None:
-    """Cuando se carga un resultado de bracket, llenamos el siguiente match."""
+    """Cuando se carga un resultado de bracket, llenamos el siguiente match.
+
+    Usa el esquema de slot compartido con ``fixture.knockout_bracket()``:
+    ``W_{round_idx - 1}_{bracket_position}``.
+    """
     match = get_match(match_id)
     if not match or match["status"] != "played":
         return
     if match["stage"] not in (STAGE_R16, STAGE_QUARTER, STAGE_SEMI):
+        return
+    # Empate en KO → no propagamos hasta resolver (e.g. con PK manual reimportado
+    # como resultado no-empatado). Por ahora asumimos resultado sin empate.
+    if match["home_score"] == match["away_score"]:
         return
     winner = (
         match["home_player_id"]
         if match["home_score"] > match["away_score"]
         else match["away_player_id"]
     )
-    # Buscar el match siguiente donde slot_home o slot_away == "W{match_id}"
-    slot_key = f"W{match['id']}"
+    slot_key = f"W_{match['round_number'] - 1}_{match['bracket_position']}"
     with db.get_conn() as conn:
         conn.execute(
             """
@@ -689,7 +828,6 @@ def _propagate_bracket_winner(match_id: int) -> None:
             """,
             (winner, match["tournament_id"], slot_key),
         )
-        # Cerrar torneo si final jugada
         if match["stage"] == STAGE_FINAL:
             conn.execute(
                 "UPDATE tournaments SET status = ? WHERE id = ?",

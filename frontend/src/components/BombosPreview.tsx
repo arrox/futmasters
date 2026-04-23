@@ -14,15 +14,28 @@ export default function BombosPreview({
   participants,
 }: Props) {
   return (
-    <div className="card">
-      <div className="flex items-center justify-between flex-wrap gap-2 mb-3">
-        <h2 className="text-lg font-semibold">Pool y bombos</h2>
+    <div className="fm-surface">
+      <div className="flex items-center justify-between flex-wrap gap-2 mb-4">
+        <div>
+          <div className="fm-eyebrow">Pool seeding</div>
+          <h2 className="fm-h2" style={{ marginTop: 2 }}>
+            Pool y bombos
+          </h2>
+        </div>
         <div className="flex gap-2">
           <span className="chip">🏆 {clubsCount} clubes</span>
-          <span className="chip">🏳️ {nationsCount} selecciones</span>
+          <span className="chip chip--totw">🏳️ {nationsCount} selecciones</span>
         </div>
       </div>
-      <p className="text-sm text-slate-400 mb-4">
+      <p
+        className="mb-5"
+        style={{
+          fontFamily: "var(--fm-font-body)",
+          fontSize: 13,
+          color: "var(--fm-ink-muted)",
+          lineHeight: 1.5,
+        }}
+      >
         {participants < 12
           ? `Con ${participants} participantes usamos solo los ${participants} primeros clubes por prioridad.`
           : `Con ${participants} participantes usamos todos los clubes y completamos con ${nationsCount} selecciones top.`}
@@ -31,12 +44,25 @@ export default function BombosPreview({
         {bombos.map((b) => (
           <div
             key={b.numero}
-            className={`bombo-card-${b.numero} border border-soft rounded-lg p-4`}
+            className={`bombo-card-${b.numero} rounded-lg p-4`}
+            style={{
+              border: "1px solid rgba(240,196,96,0.2)",
+            }}
           >
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
-                <span className="text-xl">🥁</span>
-                <span className="font-semibold">Bombo {b.numero}</span>
+                <span style={{ fontSize: 20 }}>🥁</span>
+                <div>
+                  <div className="fm-eyebrow" style={{ fontSize: 10 }}>
+                    Pot
+                  </div>
+                  <div
+                    className="fm-display"
+                    style={{ fontSize: 16, color: "var(--fm-gold)" }}
+                  >
+                    Bombo {b.numero}
+                  </div>
+                </div>
               </div>
               <span className="chip mono">OVR {b.ovr_range}</span>
             </div>
@@ -48,9 +74,20 @@ export default function BombosPreview({
                 >
                   <span className="flex items-center gap-2">
                     <span>{e.type === "club" ? "🏆" : "🏳️"}</span>
-                    <span>{e.name}</span>
+                    <span
+                      style={{
+                        fontFamily: "var(--fm-font-sans)",
+                        fontWeight: 500,
+                        letterSpacing: "0.02em",
+                      }}
+                    >
+                      {e.name}
+                    </span>
                   </span>
-                  <span className="mono text-xs text-slate-400">
+                  <span
+                    className="mono"
+                    style={{ fontSize: 11, color: "var(--fm-ink-muted)" }}
+                  >
                     OVR {e.ovr}
                   </span>
                 </li>

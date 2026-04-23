@@ -11,6 +11,12 @@ def client():
 
 
 def _crear_sorteo(client, n=16, mode="simple", seed=123):
+    """Helper: crea un sorteo. Usa header admin si hay ADMIN_PASSWORD activa."""
+    import os
+    headers = {}
+    pwd = os.environ.get("ADMIN_PASSWORD")
+    if pwd:
+        headers["Authorization"] = f"Bearer {pwd}"
     return client.post(
         "/api/sorteo",
         json={
@@ -18,6 +24,7 @@ def _crear_sorteo(client, n=16, mode="simple", seed=123):
             "mode": mode,
             "seed": seed,
         },
+        headers=headers,
     ).json()
 
 

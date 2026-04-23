@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import type { TournamentDetail } from "../api/client";
+import type { Player, TournamentDetail, Trade } from "../api/client";
 import { api } from "../api/client";
 import BracketView from "../components/BracketView";
 import FixtureList from "../components/FixtureList";
@@ -14,6 +14,7 @@ export default function TournamentPublic() {
   const [tab, setTab] = useState<"overview" | "players" | "standings" | "fixture" | "bracket">(
     "overview",
   );
+  const [showTradeModal, setShowTradeModal] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -57,7 +58,13 @@ export default function TournamentPublic() {
               <span>{players.length} jugadores</span>
             </div>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
+            <button
+              className="btn btn-primary text-sm"
+              onClick={() => setShowTradeModal(true)}
+            >
+              ↔ Intercambiar equipo
+            </button>
             <Link to="/" className="btn btn-ghost text-sm">
               Inicio
             </Link>
@@ -147,6 +154,206 @@ export default function TournamentPublic() {
       {tab === "bracket" && (
         <BracketView matches={matches} players={players} />
       )}
+
+      {showTradeModal && (
+        <TradeModal
+          players={players}
+          tournamentId={t.id}
+          onClose={() => setShowTradeModal(false)}
+        />
+      )}
+    </div>
+  );
+}
+
+function TradeModal({
+  players,
+  tournamentId,
+  onClose,
+}: {
+  players: Player[];
+  tournamentId: string;
+  onClose: () => void;
+}) {
+  const [proposerId, setProposerId] = useState<number | null>(null);
+  const [receiverId, setReceiverId] = useState<number | null>(null);
+  const [email, setEmail] = useState("");
+  const [message, setMessage] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const [done, setDone] = useState<Trade | null>(null);
+
+  const proposer = players.find((p) => p.id === proposerId) ?? null;
+
+  async function submit() {
+    if (!proposerId || !receiverId || !email) return;
+    setSaving(true);
+    setErr(null);
+    try {
+      const trade = await api.proposeTrade(tournamentId, {
+        proposer_id: proposerId,
+        receiver_id: receiverId,
+        proposer_email: email,
+        message: message || undefined,
+      });
+      setDone(trade);
+    } catch (e) {
+      setErr((e as Error).message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        background: "rgba(5,7,12,0.85)",
+        zIndex: 50,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: 20,
+      }}
+      onClick={onClose}
+    >
+      <div
+        className="fm-surface max-w-lg w-full"
+        style={{ maxHeight: "90vh", overflow: "auto" }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex justify-between items-start mb-4">
+          <div>
+            <div className="fm-eyebrow">Trade proposal</div>
+            <h2 className="fm-h2 mt-1">Proponer intercambio</h2>
+          </div>
+          <button
+            className="btn btn-ghost"
+            style={{ padding: "4px 10px" }}
+            onClick={onClose}
+          >
+            ✕
+          </button>
+        </div>
+
+        {done ? (
+          <div className="space-y-3">
+            <p
+              style={{ color: "var(--fm-fut-green)", fontSize: 14 }}
+            >
+              ✓ Propuesta creada.
+            </p>
+            <p className="text-sm" style={{ color: "var(--fm-ink-muted)" }}>
+              Enviamos un link de confirmación a{" "}
+              <span className="mono">
+                {done.proposer.email_hint ?? "tu email"}
+              </span>{" "}
+              y a{" "}
+              <span className="mono">
+                {done.receiver.email_hint ?? "tu contraparte"}
+              </span>
+              . Cuando los dos hagan clic, se intercambian los equipos automáticamente.
+            </p>
+            {done.delivery?.proposer?.backend !== "smtp" && (
+              <div
+                className="chip chip--totw block"
+                style={{ whiteSpace: "normal", textAlign: "left" }}
+              >
+                SMTP no configurado — pediles al admin que te pase el link
+                desde el panel.
+              </div>
+            )}
+            <button className="btn btn-primary w-full" onClick={onClose}>
+              Cerrar
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <div>
+              <label className="fm-eyebrow block mb-1" style={{ fontSize: 10 }}>
+                Sos…
+              </label>
+              <select
+                className="input w-full"
+                value={proposerId ?? ""}
+                onChange={(e) =>
+                  setProposerId(Number(e.target.value) || null)
+                }
+              >
+                <option value="">Elegí tu nombre</option>
+                {players.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.display_name} — {p.team_name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="fm-eyebrow block mb-1" style={{ fontSize: 10 }}>
+                Querés cambiar tu equipo con…
+              </label>
+              <select
+                className="input w-full"
+                value={receiverId ?? ""}
+                onChange={(e) =>
+                  setReceiverId(Number(e.target.value) || null)
+                }
+              >
+                <option value="">Elegí con quién</option>
+                {players
+                  .filter((p) => p.id !== proposerId)
+                  .map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.display_name} — {p.team_name}
+                    </option>
+                  ))}
+              </select>
+            </div>
+            <div>
+              <label className="fm-eyebrow block mb-1" style={{ fontSize: 10 }}>
+                Tu email registrado
+              </label>
+              <input
+                type="email"
+                className="input w-full"
+                placeholder="jugador@email.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+              <p
+                className="text-xs mt-1"
+                style={{ color: "var(--fm-ink-muted)" }}
+              >
+                Te mandamos un link de confirmación para que nadie pueda
+                cambiar tu equipo sin vos.
+              </p>
+            </div>
+            <div>
+              <label className="fm-eyebrow block mb-1" style={{ fontSize: 10 }}>
+                Mensaje (opcional)
+              </label>
+              <input
+                className="input w-full"
+                maxLength={200}
+                placeholder="“te paso Inter por tu City”"
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+              />
+            </div>
+            {err && (
+              <p style={{ color: "var(--fm-danger)", fontSize: 12 }}>{err}</p>
+            )}
+            <button
+              className="btn btn-primary w-full"
+              disabled={!proposerId || !receiverId || !email || saving}
+              onClick={submit}
+            >
+              {saving ? "Enviando…" : "Enviar propuesta"}
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

@@ -24,7 +24,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 
-from . import audit, db, export, media, tournament
+from . import audit, db, export, media, tournament, trades
 from .admin_auth import admin_password, require_admin
 from .bombos import build_bombos, compute_num_bombos
 from .pool_selector import describe_pool, select_effective_pool
@@ -144,7 +144,11 @@ def get_pool(participants: int = Query(..., ge=2, le=20)) -> dict:
     }
 
 
-@app.post("/api/sorteo", response_model=SorteoResponse)
+@app.post(
+    "/api/sorteo",
+    response_model=SorteoResponse,
+    dependencies=[Depends(require_admin)],
+)
 def post_sorteo(req: SorteoRequest) -> dict:
     n = len(req.participants)
     num_bombos = compute_num_bombos(n)
@@ -166,15 +170,34 @@ def post_sorteo(req: SorteoRequest) -> dict:
     sorteo_id = str(uuid.uuid4())
     timestamp = _now_iso()
 
+    # El hash canónico se calcula solo sobre nombres + equipo (no sobre emails)
+    # para que sea reproducible y no depienda de metadata privada.
+    participant_names = [p["name"] for p in resultado["participants_ext"]]
     canonical = audit.build_canonical_payload(
         timestamp=timestamp,
         mode=req.mode,
         seed=req.seed,
-        participants=req.participants,
+        participants=participant_names,
         pool_used=[t["name"] for t in resultado["pool"]],
         bombos=resultado["bombos"],
-        assignments=resultado["assignments"],
-        groups=resultado["groups"],
+        assignments=[
+            {k: v for k, v in a.items() if k != "email"}
+            for a in resultado["assignments"]
+        ],
+        groups=(
+            [
+                {
+                    "nombre": g["nombre"],
+                    "integrantes": [
+                        {k: v for k, v in i.items() if k != "email"}
+                        for i in g["integrantes"]
+                    ],
+                }
+                for g in resultado["groups"]
+            ]
+            if resultado["groups"]
+            else None
+        ),
     )
     hash_hex = audit.compute_hash(canonical)
 
@@ -189,7 +212,8 @@ def post_sorteo(req: SorteoRequest) -> dict:
         "timestamp": timestamp,
         "mode": req.mode,
         "seed": req.seed,
-        "participants": req.participants,
+        "participants": participant_names,
+        "participants_ext": resultado["participants_ext"],
         "pool": [_team_to_out(t) for t in resultado["pool"]],
         "bombos": [_bombo_to_out(b) for b in resultado["bombos"]],
         "assignments": resultado["assignments"],
@@ -410,6 +434,8 @@ def admin_generate_fixture(t_id: str, regenerate: bool = False):
     try:
         if t["format"] == tournament.FORMAT_LEAGUE:
             return tournament.generate_league_fixture(t_id, regenerate=regenerate)
+        if t["format"] == tournament.FORMAT_KNOCKOUT:
+            return tournament.generate_knockout_fixture(t_id, regenerate=regenerate)
         return tournament.generate_group_fixture(t_id, regenerate=regenerate)
     except ValueError as exc:
         raise HTTPException(400, str(exc)) from exc
@@ -497,12 +523,104 @@ async def admin_upload_player_photo(
     dependencies=[Depends(require_admin)],
 )
 def admin_delete_player_photo(player_id: int):
+    """Borra la foto real y la reemplaza por un avatar auto-generado."""
     player = tournament.get_player(player_id)
     if not player:
         raise HTTPException(404, "Jugador no encontrado")
     if player["photo_filename"]:
         media.delete_player_photo(player["photo_filename"])
-    return tournament.update_player(player_id, photo_filename=None)
+    try:
+        auto = media.generate_avatar_for(player["display_name"])
+    except Exception:  # noqa: BLE001
+        auto = None
+    return tournament.update_player(player_id, photo_filename=auto)
+
+
+# ──────────────────────────────────────────────────────────────
+# Intercambios (trades) entre participantes
+# ──────────────────────────────────────────────────────────────
+from .schemas import TradeOut, TradeProposeRequest  # noqa: E402
+
+
+@app.post("/api/tournaments/{t_id}/trades", response_model=TradeOut)
+def create_trade(t_id: str, req: TradeProposeRequest):
+    try:
+        trade = trades.propose_trade(
+            tournament_id=t_id,
+            proposer_id=req.proposer_id,
+            receiver_id=req.receiver_id,
+            proposer_email=req.proposer_email,
+            message=req.message,
+        )
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
+    # No filtramos delivery para el proposer inicial: así ve su propio link
+    # si SMTP está en modo log. (En producción lo oculta el frontend cuando
+    # la backend = 'smtp'.)
+    return trade
+
+
+@app.get("/api/trades/{token}", response_model=TradeOut)
+def get_trade_by_token_endpoint(token: str):
+    trade = trades.get_trade_by_token(token)
+    if not trade:
+        raise HTTPException(404, "Trade no encontrado")
+    # Para el público, NO devolvemos los tokens del otro lado ni delivery.
+    public = {k: v for k, v in trade.items() if k not in ("delivery",)}
+    return public
+
+
+@app.post("/api/trades/{token}/confirm", response_model=TradeOut)
+def confirm_trade(token: str):
+    try:
+        trade = trades.confirm(token)
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
+    return {k: v for k, v in trade.items() if k not in ("delivery",)}
+
+
+@app.post("/api/trades/{token}/cancel", response_model=TradeOut)
+def cancel_trade(token: str):
+    try:
+        trade = trades.cancel(token)
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
+    return {k: v for k, v in trade.items() if k not in ("delivery",)}
+
+
+@app.get(
+    "/api/admin/tournaments/{t_id}/trades",
+    response_model=list[TradeOut],
+    dependencies=[Depends(require_admin)],
+)
+def admin_list_trades(t_id: str):
+    if not tournament.get_tournament(t_id):
+        raise HTTPException(404, "Torneo no encontrado")
+    return trades.list_trades(t_id)
+
+
+@app.delete(
+    "/api/admin/trades/{trade_id}",
+    response_model=TradeOut,
+    dependencies=[Depends(require_admin)],
+)
+def admin_cancel_trade(trade_id: str):
+    try:
+        return trades.admin_cancel(trade_id)
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
+
+
+@app.post(
+    "/api/admin/trades/{trade_id}/authorize",
+    response_model=TradeOut,
+    dependencies=[Depends(require_admin)],
+)
+def admin_authorize_trade(trade_id: str):
+    try:
+        return trades.admin_authorize(trade_id)
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
 
 
 # ──────────────────────────────────────────────────────────────

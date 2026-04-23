@@ -24,11 +24,15 @@ export default function StandingsTable({
   return (
     <div className="space-y-4">
       {labels.map((label) => (
-        <div key={label} className="card">
+        <div key={label} className="fm-surface">
           {byGroup && label !== "all" && (
-            <h3 className="font-semibold mb-2 text-accent">
-              Grupo {label === "—" ? "—" : label}
-            </h3>
+            <div className="mb-3">
+              <div className="fm-eyebrow">Group stage</div>
+              <h3 className="fm-h2" style={{ marginTop: 2 }}>
+                Grupo {label === "—" ? "—" : label}
+              </h3>
+              <div className="fm-bar-gold" style={{ marginTop: 8, width: 60 }} />
+            </div>
           )}
           <div className="overflow-x-auto">
             <table className="w-full text-sm">

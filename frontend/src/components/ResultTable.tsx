@@ -16,8 +16,14 @@ export default function ResultTable({
     (a, b) => a.pick_order - b.pick_order,
   );
   return (
-    <div className="card overflow-x-auto">
-      <h2 className="text-lg font-semibold mb-3">Asignaciones</h2>
+    <div className="fm-surface overflow-x-auto">
+      <div className="mb-3">
+        <div className="fm-eyebrow">Draw result</div>
+        <h2 className="fm-h2" style={{ marginTop: 2 }}>
+          Asignaciones
+        </h2>
+        <div className="fm-bar-gold" style={{ marginTop: 8, width: 60 }} />
+      </div>
       <table className="w-full text-sm">
         <thead>
           <tr className="text-left text-slate-400 border-b border-soft/60">

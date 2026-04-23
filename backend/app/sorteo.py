@@ -205,14 +205,17 @@ def sortear_draft_bombos(
 
 
 def ejecutar_sorteo(
-    participants: List[str],
+    participants,
     mode: str,
     seed: Optional[int] = None,
 ) -> dict:
     """
     Punto de entrada único del sorteo.
 
-    Devuelve un dict con ``pool``, ``bombos``, ``assignments`` y ``groups``.
+    ``participants`` puede ser lista de strings (solo nombres) o lista de
+    dicts ``{"name", "email"}``. Devuelve ``pool``, ``bombos``,
+    ``assignments`` (con email opcional), ``groups`` y ``participants``
+    (lista de dicts normalizada).
     """
     from .pool_selector import select_effective_pool
 
@@ -222,21 +225,42 @@ def ejecutar_sorteo(
     if n < 2 or n > 20:
         raise ValueError("Cantidad de participantes debe estar entre 2 y 20")
 
+    # Normalizar a dicts y separar nombres del resto.
+    norm: List[dict] = []
+    for p in participants:
+        if isinstance(p, str):
+            norm.append({"name": p, "email": None})
+        elif isinstance(p, dict):
+            norm.append({"name": p["name"], "email": p.get("email")})
+        else:
+            raise ValueError("Participantes inválidos")
+    names = [p["name"] for p in norm]
+
     pool = select_effective_pool(n)
     bombos = build_bombos(pool)
 
     if mode == MODE_SIMPLE:
-        assignments, groups = sortear_simple(participants, pool, bombos, seed)
+        assignments, groups = sortear_simple(names, pool, bombos, seed)
     elif mode == MODE_BOMBO_EQUILIBRADO:
-        assignments, groups = sortear_bombo_equilibrado(participants, pool, bombos, seed)
+        assignments, groups = sortear_bombo_equilibrado(names, pool, bombos, seed)
     else:  # MODE_DRAFT
-        assignments, groups = sortear_draft_bombos(participants, pool, bombos, seed)
+        assignments, groups = sortear_draft_bombos(names, pool, bombos, seed)
+
+    # Inyectar email en cada assignment según el nombre original.
+    email_by_name = {p["name"]: p.get("email") for p in norm}
+    for a in assignments:
+        a["email"] = email_by_name.get(a["participant"])
+    if groups:
+        for g in groups:
+            for i in g["integrantes"]:
+                i["email"] = email_by_name.get(i["participant"])
 
     return {
         "pool": pool,
         "bombos": bombos,
         "assignments": assignments,
         "groups": groups,
+        "participants_ext": norm,
     }
 
 

@@ -95,10 +95,38 @@ def init_db() -> None:
                     pick_order INTEGER NOT NULL,
                     group_label TEXT,
                     photo_filename TEXT,
+                    email TEXT,
                     FOREIGN KEY(tournament_id) REFERENCES tournaments(id) ON DELETE CASCADE
                 );
                 CREATE INDEX IF NOT EXISTS idx_players_tournament
                     ON players(tournament_id);
+
+                CREATE TABLE IF NOT EXISTS trades (
+                    id TEXT PRIMARY KEY,
+                    tournament_id TEXT NOT NULL,
+                    proposer_id INTEGER NOT NULL,
+                    receiver_id INTEGER NOT NULL,
+                    proposer_token TEXT NOT NULL UNIQUE,
+                    receiver_token TEXT NOT NULL UNIQUE,
+                    proposer_confirmed_at TEXT,
+                    receiver_confirmed_at TEXT,
+                    status TEXT NOT NULL DEFAULT 'pending',
+                        -- 'pending' | 'confirmed' | 'executed' | 'cancelled' | 'expired'
+                    message TEXT,
+                    created_at TEXT NOT NULL,
+                    expires_at TEXT NOT NULL,
+                    executed_at TEXT,
+                    cancelled_at TEXT,
+                    cancelled_by TEXT,  -- 'proposer' | 'receiver' | 'admin'
+                    delivery_notes TEXT, -- JSON con status de envío por participante
+                    FOREIGN KEY(tournament_id) REFERENCES tournaments(id) ON DELETE CASCADE,
+                    FOREIGN KEY(proposer_id) REFERENCES players(id),
+                    FOREIGN KEY(receiver_id) REFERENCES players(id)
+                );
+                CREATE INDEX IF NOT EXISTS idx_trades_tournament
+                    ON trades(tournament_id);
+                CREATE INDEX IF NOT EXISTS idx_trades_tokens
+                    ON trades(proposer_token, receiver_token);
 
                 CREATE TABLE IF NOT EXISTS matches (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -125,6 +153,8 @@ def init_db() -> None:
                     ON matches(tournament_id, stage, round_number);
                 """
             )
+            # Migraciones in-place para DBs creadas con schema anterior.
+            _ensure_column(conn, "players", "email", "TEXT")
 
 
 def insert_sorteo(
@@ -200,3 +230,10 @@ def _row_to_dict(row: sqlite3.Row) -> dict:
     d["payload_canonical"] = json.loads(d.pop("payload_json"))
     d["full_result"] = json.loads(d.pop("full_result_json"))
     return d
+
+
+def _ensure_column(conn: sqlite3.Connection, table: str, col: str, decl: str) -> None:
+    """ALTER TABLE ADD COLUMN si no existe. SQLite-safe."""
+    cols = {r["name"] for r in conn.execute(f"PRAGMA table_info({table})")}
+    if col not in cols:
+        conn.execute(f"ALTER TABLE {table} ADD COLUMN {col} {decl}")

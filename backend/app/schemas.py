@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from typing import List, Literal, Optional
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator  # noqa: F401
 
 
 Mode = Literal["simple", "bombo_equilibrado", "draft_bombos"]
@@ -44,29 +44,69 @@ class TeamsResponse(BaseModel):
     count: int
 
 
+class ParticipantInput(BaseModel):
+    """Un participante a sortear: nombre + email opcional."""
+
+    name: str = Field(min_length=1, max_length=50)
+    email: Optional[str] = Field(default=None, max_length=120)
+
+    @field_validator("name")
+    @classmethod
+    def _clean_name(cls, v: str) -> str:
+        v = v.strip()
+        if not v:
+            raise ValueError("Nombre vacío")
+        return v
+
+    @field_validator("email")
+    @classmethod
+    def _clean_email(cls, v: Optional[str]) -> Optional[str]:
+        if v is None:
+            return None
+        v = v.strip()
+        if not v:
+            return None
+        if "@" not in v or "." not in v.split("@")[-1]:
+            raise ValueError("Email inválido")
+        return v.lower()
+
+
 class SorteoRequest(BaseModel):
-    participants: List[str] = Field(min_length=2, max_length=20)
+    """
+    Request del sorteo. ``participants`` acepta strings (compat legado)
+    o objetos ``{name, email}``.
+    """
+
+    participants: List  # validado abajo
     mode: Mode
     seed: Optional[int] = None
 
     @field_validator("participants")
     @classmethod
-    def _validate_participants(cls, v: List[str]) -> List[str]:
-        cleaned: List[str] = []
-        seen = set()
+    def _validate_participants(cls, v: list) -> List[dict]:
+        if not isinstance(v, list) or not (2 <= len(v) <= 20):
+            raise ValueError("Cantidad de participantes debe estar entre 2 y 20")
+        cleaned: List[dict] = []
+        seen_names = set()
+        seen_emails = set()
         for raw in v:
-            if not isinstance(raw, str):
-                raise ValueError("Nombres deben ser strings")
-            name = raw.strip()
-            if not name:
-                raise ValueError("Nombres no pueden ser vacíos")
-            if len(name) > 50:
-                raise ValueError(f"Nombre '{name[:20]}...' excede 50 caracteres")
-            key = name.casefold()
-            if key in seen:
-                raise ValueError(f"Nombre duplicado (case-insensitive): {name}")
-            seen.add(key)
-            cleaned.append(name)
+            if isinstance(raw, str):
+                parsed = ParticipantInput(name=raw)
+            elif isinstance(raw, dict):
+                parsed = ParticipantInput(**raw)
+            else:
+                raise ValueError(
+                    "Cada participante debe ser un string o un objeto {name, email}"
+                )
+            key = parsed.name.casefold()
+            if key in seen_names:
+                raise ValueError(f"Nombre duplicado: {parsed.name}")
+            seen_names.add(key)
+            if parsed.email:
+                if parsed.email in seen_emails:
+                    raise ValueError(f"Email duplicado: {parsed.email}")
+                seen_emails.add(parsed.email)
+            cleaned.append(parsed.model_dump())
         return cleaned
 
 
@@ -130,7 +170,7 @@ class SorteoListResponse(BaseModel):
 # ──────────────────────────────────────────────────────────────
 # Torneos
 # ──────────────────────────────────────────────────────────────
-TournamentFormat = Literal["groups_knockout", "league"]
+TournamentFormat = Literal["groups_knockout", "league", "knockout"]
 TournamentStatus = Literal["draft", "groups", "knockout", "finished"]
 MatchStage = Literal[
     "group", "league", "round_of_16", "quarter", "semi", "final", "third_place"
@@ -142,8 +182,8 @@ class TournamentCreate(BaseModel):
     name: str = Field(min_length=1, max_length=80)
     sorteo_id: Optional[str] = None
     format: TournamentFormat = "groups_knockout"
-    num_groups: int = Field(default=4, ge=1, le=8)
-    qualify_per_group: int = Field(default=2, ge=1, le=8)
+    num_groups: int = Field(default=4, ge=0, le=8)
+    qualify_per_group: int = Field(default=2, ge=0, le=8)
     points_win: int = 3
     points_draw: int = 1
     points_loss: int = 0
@@ -189,11 +229,75 @@ class PlayerOut(BaseModel):
     pick_order: int
     group_label: Optional[str]
     photo_filename: Optional[str]
+    email: Optional[str] = None
 
 
 class PlayerUpdate(BaseModel):
     display_name: Optional[str] = Field(default=None, min_length=1, max_length=50)
     group_label: Optional[str] = None
+    email: Optional[str] = Field(default=None, max_length=120)
+
+    @field_validator("email")
+    @classmethod
+    def _validate_email(cls, v: Optional[str]) -> Optional[str]:
+        if v is None:
+            return None
+        v = v.strip()
+        if not v:
+            return None
+        if "@" not in v or "." not in v.split("@")[-1]:
+            raise ValueError("Email inválido")
+        if len(v) > 120:
+            raise ValueError("Email demasiado largo")
+        return v.lower()
+
+
+class TradeProposeRequest(BaseModel):
+    proposer_id: int
+    receiver_id: int
+    proposer_email: str = Field(min_length=3, max_length=120)
+    message: Optional[str] = Field(default=None, max_length=200)
+
+
+class PlayerSummary(BaseModel):
+    id: int
+    display_name: str
+    team_name: str
+    team_type: Literal["club", "nation"]
+    team_ovr: int
+    bombo: int
+    photo_filename: Optional[str]
+    email_hint: Optional[str] = None
+
+
+class TradeDelivery(BaseModel):
+    sent: bool
+    backend: str
+    detail: str
+    email: Optional[str] = None
+    link: Optional[str] = None
+
+
+class TradeOut(BaseModel):
+    id: str
+    tournament_id: str
+    status: Literal[
+        "pending", "confirmed", "awaiting_admin", "executed", "cancelled", "expired"
+    ]
+    message: Optional[str]
+    created_at: str
+    expires_at: str
+    executed_at: Optional[str]
+    cancelled_at: Optional[str]
+    cancelled_by: Optional[str]
+    proposer_confirmed_at: Optional[str]
+    receiver_confirmed_at: Optional[str]
+    proposer: PlayerSummary
+    receiver: PlayerSummary
+    delivery: Optional[dict] = None
+    role: Optional[Literal["proposer", "receiver"]] = None
+    proposer_token: Optional[str] = None
+    receiver_token: Optional[str] = None
 
 
 class MatchOut(BaseModel):

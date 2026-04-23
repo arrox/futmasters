@@ -11,7 +11,10 @@ import uuid
 from pathlib import Path
 from typing import BinaryIO, Tuple
 
-from PIL import Image, ImageOps
+import hashlib
+import random
+
+from PIL import Image, ImageDraw, ImageFont, ImageOps
 
 
 MEDIA_DIR_ENV = "FC26_MEDIA_DIR"
@@ -74,6 +77,116 @@ def save_player_photo(
     out_path = media_dir() / filename
     img.save(out_path, format="JPEG", quality=88, optimize=True)
 
+    return filename
+
+
+# ──────────────────────────────────────────────────────────────
+# Avatar auto-generado cuando el admin no sube foto.
+# Se genera un JPEG 480×480 con gradiente derivado del nombre
+# + iniciales en el centro. Se guarda en el mismo directorio que
+# las fotos reales para que el resto del flujo no cambie.
+# ──────────────────────────────────────────────────────────────
+_PALETTES = [
+    ("#f0c460", "#8a5a1a"),   # gold metal
+    ("#6ec5ff", "#0e2a6b"),   # TOTW
+    ("#ff8a4b", "#7a4220"),   # bronze
+    ("#d8dde3", "#6b6d7a"),   # silver
+    ("#e8c56a", "#0a0a0c"),   # icon
+    ("#00ff87", "#00663a"),   # FUT green
+    ("#ff6b9a", "#6b1e3e"),   # rose
+    ("#a78bfa", "#3b1e7a"),   # purple
+]
+
+
+def _hex_to_rgb(hex_color: str) -> tuple[int, int, int]:
+    h = hex_color.lstrip("#")
+    return tuple(int(h[i : i + 2], 16) for i in (0, 2, 4))  # type: ignore
+
+
+def _initials(name: str) -> str:
+    words = [w for w in name.strip().split() if w]
+    if not words:
+        return "??"
+    if len(words) == 1:
+        return words[0][:2].upper()
+    return (words[0][0] + words[-1][0]).upper()
+
+
+def _pick_palette(name: str) -> tuple[str, str]:
+    """Palette determinista según hash del nombre."""
+    h = hashlib.sha1(name.encode("utf-8")).digest()[0]
+    return _PALETTES[h % len(_PALETTES)]
+
+
+def _load_big_font(size: int) -> ImageFont.ImageFont:
+    """Intenta cargar DejaVu Sans Bold; si no, default bitmap escalada."""
+    candidates = [
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+        "/usr/share/fonts/TTF/DejaVuSans-Bold.ttf",
+        "/Library/Fonts/Arial Bold.ttf",
+    ]
+    for path in candidates:
+        if os.path.exists(path):
+            try:
+                return ImageFont.truetype(path, size)
+            except Exception:  # noqa: BLE001
+                continue
+    return ImageFont.load_default()
+
+
+def generate_avatar_for(name: str) -> str:
+    """
+    Crea un avatar 480×480 con gradiente + iniciales. Devuelve filename relativo.
+    """
+    from io import BytesIO
+
+    top_hex, bot_hex = _pick_palette(name)
+    top = _hex_to_rgb(top_hex)
+    bot = _hex_to_rgb(bot_hex)
+    size = TARGET_SIZE[0]
+
+    # Gradiente vertical (linear)
+    img = Image.new("RGB", (size, size), bot)
+    px = img.load()
+    for y in range(size):
+        t = y / (size - 1)
+        r = int(top[0] * (1 - t) + bot[0] * t)
+        g = int(top[1] * (1 - t) + bot[1] * t)
+        b = int(top[2] * (1 - t) + bot[2] * t)
+        for x in range(size):
+            px[x, y] = (r, g, b)
+
+    # Patrón diagonal sutil
+    overlay = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+    od = ImageDraw.Draw(overlay)
+    for i in range(-size, size, 24):
+        od.line(
+            [(i, 0), (i + size, size)],
+            fill=(255, 255, 255, 12),
+            width=3,
+        )
+    img = Image.alpha_composite(img.convert("RGBA"), overlay).convert("RGB")
+
+    # Iniciales grandes en el centro
+    text = _initials(name)
+    font = _load_big_font(260)
+    d = ImageDraw.Draw(img)
+    try:
+        bbox = d.textbbox((0, 0), text, font=font)
+        tw, th = bbox[2] - bbox[0], bbox[3] - bbox[1]
+        xoff, yoff = bbox[0], bbox[1]
+    except AttributeError:
+        tw, th = d.textsize(text, font=font)
+        xoff = yoff = 0
+    x = (size - tw) // 2 - xoff
+    y = (size - th) // 2 - yoff
+    # Sombra
+    d.text((x + 3, y + 4), text, font=font, fill=(0, 0, 0, 160))
+    d.text((x, y), text, font=font, fill=(255, 255, 255))
+
+    filename = f"players/auto-{uuid.uuid4().hex}.jpg"
+    out = media_dir() / filename
+    img.save(out, format="JPEG", quality=86, optimize=True)
     return filename
 
 

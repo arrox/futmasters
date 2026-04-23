@@ -40,8 +40,14 @@ export default function IntegrityPanel({ sorteo }: Props) {
   const nations = sorteo.pool.filter((t) => t.type === "nation").length;
 
   return (
-    <aside className="card space-y-3">
-      <h2 className="text-lg font-semibold">Integridad</h2>
+    <aside className="fm-surface space-y-3">
+      <div>
+        <div className="fm-eyebrow">Audit</div>
+        <h2 className="fm-h2" style={{ marginTop: 2 }}>
+          Integridad
+        </h2>
+      </div>
+      <div className="fm-bar-gold" style={{ marginBottom: 4 }} />
       <dl className="text-sm space-y-2">
         <div>
           <dt className="text-slate-400 text-xs">Sorteo ID</dt>

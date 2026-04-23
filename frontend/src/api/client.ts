@@ -152,7 +152,7 @@ async function requestMultipart<T>(path: string, body: FormData): Promise<T> {
 }
 
 // Tipos torneo
-export type TournamentFormat = "groups_knockout" | "league";
+export type TournamentFormat = "groups_knockout" | "league" | "knockout";
 export type TournamentStatus =
   | "draft"
   | "groups"
@@ -197,6 +197,54 @@ export interface Player {
   pick_order: number;
   group_label: string | null;
   photo_filename: string | null;
+  email: string | null;
+}
+
+export type TradeStatus =
+  | "pending"
+  | "confirmed"
+  | "awaiting_admin"
+  | "executed"
+  | "cancelled"
+  | "expired";
+
+export interface TradePlayerSummary {
+  id: number;
+  display_name: string;
+  team_name: string;
+  team_type: "club" | "nation";
+  team_ovr: number;
+  bombo: number;
+  photo_filename: string | null;
+  email_hint: string | null;
+}
+
+export interface TradeDelivery {
+  sent: boolean;
+  backend: "smtp" | "log" | "error";
+  detail: string;
+  email: string | null;
+  link: string | null;
+}
+
+export interface Trade {
+  id: string;
+  tournament_id: string;
+  status: TradeStatus;
+  message: string | null;
+  created_at: string;
+  expires_at: string;
+  executed_at: string | null;
+  cancelled_at: string | null;
+  cancelled_by: string | null;
+  proposer_confirmed_at: string | null;
+  receiver_confirmed_at: string | null;
+  proposer: TradePlayerSummary;
+  receiver: TradePlayerSummary;
+  delivery?: { proposer?: TradeDelivery; receiver?: TradeDelivery };
+  role?: "proposer" | "receiver";
+  proposer_token?: string;
+  receiver_token?: string;
 }
 
 export interface Match {
@@ -244,14 +292,18 @@ export interface TournamentDetail {
 export const api = {
   pool: (n: number) => request<PoolResponse>(`/pool?participants=${n}`),
   sortear: (body: {
-    participants: string[];
+    participants: Array<string | { name: string; email: string | null }>;
     mode: Mode;
     seed: number | null;
   }) =>
-    request<SorteoResponse>("/sorteo", {
-      method: "POST",
-      body: JSON.stringify(body),
-    }),
+    request<SorteoResponse>(
+      "/sorteo",
+      {
+        method: "POST",
+        body: JSON.stringify(body),
+      },
+      true, // sorteo ahora requiere admin
+    ),
   getSorteo: (id: string) => request<SorteoResponse>(`/sorteo/${id}`),
   verify: (id: string) => request<VerifyResponse>(`/sorteo/${id}/verify`),
   listSorteos: (limit = 20, offset = 0) =>
@@ -357,4 +409,42 @@ export const api = {
 
   mediaUrl: (filename: string | null) =>
     filename ? `/media/${filename}` : null,
+
+  // Trades
+  proposeTrade: (
+    tournament_id: string,
+    body: {
+      proposer_id: number;
+      receiver_id: number;
+      proposer_email: string;
+      message?: string;
+    },
+  ) =>
+    request<Trade>(`/tournaments/${tournament_id}/trades`, {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  getTrade: (token: string) => request<Trade>(`/trades/${token}`),
+  confirmTrade: (token: string) =>
+    request<Trade>(`/trades/${token}/confirm`, { method: "POST" }),
+  cancelTrade: (token: string) =>
+    request<Trade>(`/trades/${token}/cancel`, { method: "POST" }),
+  adminListTrades: (tournament_id: string) =>
+    request<Trade[]>(
+      `/admin/tournaments/${tournament_id}/trades`,
+      undefined,
+      true,
+    ),
+  adminCancelTrade: (trade_id: string) =>
+    request<Trade>(
+      `/admin/trades/${trade_id}`,
+      { method: "DELETE" },
+      true,
+    ),
+  adminAuthorizeTrade: (trade_id: string) =>
+    request<Trade>(
+      `/admin/trades/${trade_id}/authorize`,
+      { method: "POST" },
+      true,
+    ),
 };

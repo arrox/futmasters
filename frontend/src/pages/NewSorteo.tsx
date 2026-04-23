@@ -1,19 +1,33 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import ParticipantList from "../components/ParticipantList";
+import { Link, useNavigate } from "react-router-dom";
+import ParticipantList, {
+  ParticipantEntry,
+} from "../components/ParticipantList";
 import BombosPreview from "../components/BombosPreview";
 import ModeSelector from "../components/ModeSelector";
 import type { Mode, PoolResponse } from "../api/client";
-import { api } from "../api/client";
+import { adminToken, api } from "../api/client";
 
 export default function NewSorteo() {
-  const [participants, setParticipants] = useState<string[]>([]);
+  const [participants, setParticipants] = useState<ParticipantEntry[]>([]);
   const [mode, setMode] = useState<Mode>("simple");
   const [seedText, setSeedText] = useState("");
   const [pool, setPool] = useState<PoolResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [adminRequired, setAdminRequired] = useState(false);
+  const [isAdmin, setIsAdmin] = useState<boolean>(adminToken.get() !== null);
   const nav = useNavigate();
+
+  useEffect(() => {
+    api
+      .adminStatus()
+      .then((s) => {
+        setAdminRequired(s.configured);
+        if (!s.configured) setIsAdmin(true); // dev mode
+      })
+      .catch(() => setAdminRequired(false));
+  }, []);
 
   useEffect(() => {
     if (participants.length < 2) {
@@ -89,13 +103,29 @@ export default function NewSorteo() {
             inputMode="numeric"
           />
         </div>
-        <button
-          className="btn btn-primary w-full text-base py-3"
-          disabled={!enoughParticipants || loading}
-          onClick={sortear}
-        >
-          {loading ? "Sorteando…" : "🎲 Sortear"}
-        </button>
+        {!isAdmin && adminRequired ? (
+          <div className="fm-surface" style={{ textAlign: "center" }}>
+            <div className="fm-eyebrow">Admin only</div>
+            <p
+              className="mt-2 text-sm"
+              style={{ color: "var(--fm-ink-muted)", lineHeight: 1.6 }}
+            >
+              Solo el admin puede ejecutar un sorteo. Ingresá con tu password
+              para continuar.
+            </p>
+            <Link to="/admin/login" className="btn btn-primary mt-3">
+              Ingresar como admin
+            </Link>
+          </div>
+        ) : (
+          <button
+            className="btn btn-primary w-full text-base py-3"
+            disabled={!enoughParticipants || loading}
+            onClick={sortear}
+          >
+            {loading ? "Sorteando…" : "🎲 Sortear"}
+          </button>
+        )}
         {error && (
           <div className="card text-coral text-sm">
             <strong>Error:</strong> {error}
