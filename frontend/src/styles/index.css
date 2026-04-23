@@ -1,0 +1,94 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html {
+  font-family: "Inter", system-ui, sans-serif;
+  font-feature-settings: "cv11", "ss01";
+}
+
+body {
+  @apply bg-bg text-slate-100 min-h-screen;
+  background-image: radial-gradient(
+      ellipse at 20% -10%,
+      rgba(0, 212, 255, 0.08),
+      transparent 50%
+    ),
+    radial-gradient(ellipse at 100% 0%, rgba(255, 107, 107, 0.05), transparent 40%);
+  background-attachment: fixed;
+}
+
+@layer components {
+  .card {
+    @apply bg-bg2/80 backdrop-blur rounded-xl p-5 border border-soft shadow-glow transition-shadow;
+  }
+  .card:hover {
+    @apply shadow-glow-strong;
+  }
+  .btn {
+    @apply inline-flex items-center gap-2 px-4 py-2 rounded-md font-medium transition-all;
+  }
+  .btn-primary {
+    @apply bg-accent text-bg hover:bg-cyan-300 disabled:bg-slate-600 disabled:text-slate-400 disabled:cursor-not-allowed;
+  }
+  .btn-ghost {
+    @apply border border-soft text-slate-100 hover:bg-accent/10;
+  }
+  .btn-danger {
+    @apply bg-coral text-bg hover:bg-red-400;
+  }
+  .input {
+    @apply bg-bg2 border border-soft rounded-md px-3 py-2 text-slate-100
+           placeholder:text-slate-500 focus:outline-none focus:border-accent
+           focus:ring-2 focus:ring-accent/30 transition;
+  }
+  .chip {
+    @apply inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs
+           border border-soft bg-bg2/60 font-medium;
+  }
+  .mono {
+    font-family: "JetBrains Mono", monospace;
+  }
+}
+
+.bombo-card-1 {
+  background: linear-gradient(
+    135deg,
+    rgba(0, 212, 255, 0.18),
+    rgba(0, 212, 255, 0.02)
+  );
+}
+.bombo-card-2 {
+  background: linear-gradient(
+    135deg,
+    rgba(106, 190, 255, 0.14),
+    rgba(106, 190, 255, 0.02)
+  );
+}
+.bombo-card-3 {
+  background: linear-gradient(
+    135deg,
+    rgba(167, 139, 250, 0.14),
+    rgba(167, 139, 250, 0.02)
+  );
+}
+.bombo-card-4 {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 107, 107, 0.12),
+    rgba(255, 107, 107, 0.02)
+  );
+}
+
+.bombo-row-1 {
+  background-color: rgba(0, 212, 255, 0.06);
+}
+.bombo-row-2 {
+  background-color: rgba(106, 190, 255, 0.05);
+}
+.bombo-row-3 {
+  background-color: rgba(167, 139, 250, 0.05);
+}
+.bombo-row-4 {
+  background-color: rgba(255, 107, 107, 0.05);
+}
