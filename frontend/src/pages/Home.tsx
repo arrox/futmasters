@@ -249,11 +249,7 @@ export default function Home() {
             </li>
             <li>
               Recibes un correo con tu equipo asignado (Real Madrid, Man City,
-              etc.) y el enlace al torneo.
-            </li>
-            <li>
-              Para ingresar al sistema, Cloudflare te envía un código de 6
-              dígitos a tu correo.
+              etc.) y el enlace para seguir el torneo en vivo.
             </li>
             <li>
               ¿No te gusta tu equipo? Puedes proponer intercambios con otros

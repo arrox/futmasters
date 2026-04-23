@@ -165,10 +165,7 @@ def send_welcome_email(
         f"Hola {player_name},\n\n"
         f"Fuiste incluido en el torneo {tournament_name}.\n"
         f"Tu equipo asignado: {team_name} (OVR {team_ovr}).\n\n"
-        f"Para ingresar al sistema visita {base}.\n"
-        f"Cloudflare enviará un código de 6 dígitos a este correo ({to_addr}) "
-        f"para verificar tu identidad. Ingresa el código cuando te lo solicite "
-        f"y listo.\n\n"
+        f"Para ingresar visita {base} y sigue el torneo en vivo.\n\n"
         f"¿Quieres cambiar de equipo con alguien? Desde la página del torneo "
         f"puedes proponer intercambios. Tú confirmas con tu enlace, tu "
         f"contraparte también, y el administrador autoriza el cambio final.\n\n"
@@ -182,13 +179,10 @@ def send_welcome_email(
       <p style="background:#fff7e0;border:1px solid #f0c460;padding:12px;border-radius:6px">
         Tu equipo asignado: <b>{team_name}</b> · OVR <b>{team_ovr}</b>
       </p>
-      <h3 style="margin-bottom:4px">Cómo ingresar al sistema</h3>
-      <ol>
-        <li>Abre <a href="{base}">{base}</a></li>
-        <li>Cloudflare te pedirá tu correo y enviará un código de 6 dígitos
-            a <b>{to_addr}</b>.</li>
-        <li>Ingresa el código y listo — ya estás dentro.</li>
-      </ol>
+      <p>
+        Sigue el torneo en vivo:
+        <a href="{base}">{base}</a>
+      </p>
       <h3 style="margin-bottom:4px">Cambiar de equipo</h3>
       <p>Desde la página del torneo puedes proponer intercambios con otros
          participantes. Tú confirmas con tu enlace, tu contraparte también, y
