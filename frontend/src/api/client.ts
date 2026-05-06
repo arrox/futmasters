@@ -93,6 +93,10 @@ export interface SorteoListResponse {
 const BASE = "/api";
 const TOKEN_KEY = "fc26_admin_token";
 
+// PWA standalone: sin backend, sorteos locales con IndexedDB.
+export const STANDALONE =
+  (import.meta as unknown as { env?: Record<string, string> }).env?.VITE_STANDALONE === "true";
+
 export const adminToken = {
   get: () => localStorage.getItem(TOKEN_KEY),
   set: (t: string) => localStorage.setItem(TOKEN_KEY, t),
@@ -290,30 +294,67 @@ export interface TournamentDetail {
 }
 
 export const api = {
-  pool: (n: number) => request<PoolResponse>(`/pool?participants=${n}`),
+  pool: (n: number) =>
+    STANDALONE
+      ? import("./localBackend").then((m) => m.localPool(n))
+      : request<PoolResponse>(`/pool?participants=${n}`),
   sortear: (body: {
     participants: Array<string | { name: string; email: string | null }>;
     mode: Mode;
     seed: number | null;
   }) =>
-    request<SorteoResponse>(
-      "/sorteo",
-      {
-        method: "POST",
-        body: JSON.stringify(body),
-      },
-      true, // sorteo ahora requiere admin
-    ),
-  getSorteo: (id: string) => request<SorteoResponse>(`/sorteo/${id}`),
-  verify: (id: string) => request<VerifyResponse>(`/sorteo/${id}/verify`),
+    STANDALONE
+      ? import("./localBackend").then((m) => m.localSortear(body))
+      : request<SorteoResponse>(
+          "/sorteo",
+          {
+            method: "POST",
+            body: JSON.stringify(body),
+          },
+          true, // sorteo ahora requiere admin
+        ),
+  getSorteo: (id: string) =>
+    STANDALONE
+      ? import("./localBackend").then((m) => m.localGetSorteo(id))
+      : request<SorteoResponse>(`/sorteo/${id}`),
+  verify: (id: string) =>
+    STANDALONE
+      ? import("./localBackend").then((m) => m.localVerify(id))
+      : request<VerifyResponse>(`/sorteo/${id}/verify`),
   listSorteos: (limit = 20, offset = 0) =>
-    request<SorteoListResponse>(`/sorteos?limit=${limit}&offset=${offset}`),
+    STANDALONE
+      ? import("./localBackend").then((m) => m.localListSorteos(limit, offset))
+      : request<SorteoListResponse>(`/sorteos?limit=${limit}&offset=${offset}`),
   exportUrl: (id: string, format: "csv" | "json" | "md") =>
-    `${BASE}/sorteo/${id}/export?format=${format}`,
+    STANDALONE ? "#" : `${BASE}/sorteo/${id}/export?format=${format}`,
+  downloadExport: async (sorteo: SorteoResponse, format: "csv" | "json" | "md") => {
+    let content: string, mime: string, filename: string;
+    if (STANDALONE) {
+      const m = await import("../lib/exporters");
+      const r = m.exportSorteo(sorteo, format);
+      content = r.content; mime = r.mime; filename = r.filename;
+    } else {
+      const res = await fetch(`${BASE}/sorteo/${sorteo.sorteo_id}/export?format=${format}`);
+      content = await res.text();
+      mime = res.headers.get("content-type") ?? "application/octet-stream";
+      filename = `sorteo_${sorteo.sorteo_id}.${format}`;
+    }
+    const blob = new Blob([content], { type: mime });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  },
 
   // Admin
   adminStatus: () =>
-    request<{ token: string; configured: boolean }>("/admin/status"),
+    STANDALONE
+      ? Promise.resolve({ token: "", configured: false })
+      : request<{ token: string; configured: boolean }>("/admin/status"),
   adminLogin: (password: string) =>
     request<{ token: string; configured: boolean }>("/admin/login", {
       method: "POST",

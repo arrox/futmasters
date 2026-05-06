@@ -1,0 +1,695 @@
+[
+  {
+    "sorteo_id": "1d9c7350-d89d-4df8-8250-22252d1eeabe",
+    "timestamp": "2026-04-23T18:36:06.751833+00:00",
+    "mode": "simple",
+    "seed": 1,
+    "participants": [
+      "Juan",
+      "Pedro",
+      "Ana",
+      "Sofi"
+    ],
+    "pool": [
+      {
+        "name": "Real Madrid",
+        "type": "club",
+        "ovr": 88,
+        "att": 86,
+        "mid": 83,
+        "def": 86,
+        "bombo": 1,
+        "priority": 1
+      },
+      {
+        "name": "Manchester City",
+        "type": "club",
+        "ovr": 85,
+        "att": 85,
+        "mid": 82,
+        "def": 84,
+        "bombo": 1,
+        "priority": 2
+      },
+      {
+        "name": "Paris Saint-Germain",
+        "type": "club",
+        "ovr": 85,
+        "att": 85,
+        "mid": 86,
+        "def": 85,
+        "bombo": 1,
+        "priority": 3
+      },
+      {
+        "name": "FC Barcelona",
+        "type": "club",
+        "ovr": 85,
+        "att": 86,
+        "mid": 84,
+        "def": 81,
+        "bombo": 1,
+        "priority": 4
+      }
+    ],
+    "bombos": [
+      {
+        "numero": 1,
+        "equipos": [
+          {
+            "name": "Real Madrid",
+            "type": "club",
+            "ovr": 88,
+            "att": 86,
+            "mid": 83,
+            "def": 86,
+            "bombo": 1,
+            "priority": 1
+          }
+        ],
+        "ovr_range": "88-88"
+      },
+      {
+        "numero": 2,
+        "equipos": [
+          {
+            "name": "Manchester City",
+            "type": "club",
+            "ovr": 85,
+            "att": 85,
+            "mid": 82,
+            "def": 84,
+            "bombo": 1,
+            "priority": 2
+          }
+        ],
+        "ovr_range": "85-85"
+      },
+      {
+        "numero": 3,
+        "equipos": [
+          {
+            "name": "Paris Saint-Germain",
+            "type": "club",
+            "ovr": 85,
+            "att": 85,
+            "mid": 86,
+            "def": 85,
+            "bombo": 1,
+            "priority": 3
+          }
+        ],
+        "ovr_range": "85-85"
+      },
+      {
+        "numero": 4,
+        "equipos": [
+          {
+            "name": "FC Barcelona",
+            "type": "club",
+            "ovr": 85,
+            "att": 86,
+            "mid": 84,
+            "def": 81,
+            "bombo": 1,
+            "priority": 4
+          }
+        ],
+        "ovr_range": "85-85"
+      }
+    ],
+    "assignments": [
+      {
+        "participant": "Juan",
+        "team": "FC Barcelona",
+        "ovr": 85,
+        "bombo": 4,
+        "pick_order": 1
+      },
+      {
+        "participant": "Pedro",
+        "team": "Real Madrid",
+        "ovr": 88,
+        "bombo": 1,
+        "pick_order": 2
+      },
+      {
+        "participant": "Ana",
+        "team": "Paris Saint-Germain",
+        "ovr": 85,
+        "bombo": 3,
+        "pick_order": 3
+      },
+      {
+        "participant": "Sofi",
+        "team": "Manchester City",
+        "ovr": 85,
+        "bombo": 2,
+        "pick_order": 4
+      }
+    ],
+    "groups": null,
+    "hash": "df67838b710474c1c2ad712b04e20133c58618400f8f436e18d6a1c8dd1cfad1",
+    "warnings": [
+      "Con 4 participantes se usaron 4 equipos del pool de 20."
+    ]
+  },
+  {
+    "sorteo_id": "30f436d3-f145-479c-a8ea-8811dcbe8628",
+    "timestamp": "2026-04-23T19:11:26.851027+00:00",
+    "mode": "simple",
+    "seed": null,
+    "participants": [
+      "andres",
+      "andres 2"
+    ],
+    "pool": [
+      {
+        "name": "Real Madrid",
+        "type": "club",
+        "ovr": 88,
+        "att": 86,
+        "mid": 83,
+        "def": 86,
+        "bombo": 1,
+        "priority": 1
+      },
+      {
+        "name": "Manchester City",
+        "type": "club",
+        "ovr": 85,
+        "att": 85,
+        "mid": 82,
+        "def": 84,
+        "bombo": 1,
+        "priority": 2
+      }
+    ],
+    "bombos": [
+      {
+        "numero": 1,
+        "equipos": [
+          {
+            "name": "Real Madrid",
+            "type": "club",
+            "ovr": 88,
+            "att": 86,
+            "mid": 83,
+            "def": 86,
+            "bombo": 1,
+            "priority": 1
+          }
+        ],
+        "ovr_range": "88-88"
+      },
+      {
+        "numero": 2,
+        "equipos": [
+          {
+            "name": "Manchester City",
+            "type": "club",
+            "ovr": 85,
+            "att": 85,
+            "mid": 82,
+            "def": 84,
+            "bombo": 1,
+            "priority": 2
+          }
+        ],
+        "ovr_range": "85-85"
+      }
+    ],
+    "assignments": [
+      {
+        "participant": "andres",
+        "team": "Real Madrid",
+        "ovr": 88,
+        "bombo": 1,
+        "pick_order": 1,
+        "email": "andresarroz@gmail.com"
+      },
+      {
+        "participant": "andres 2",
+        "team": "Manchester City",
+        "ovr": 85,
+        "bombo": 2,
+        "pick_order": 2,
+        "email": "andrearroz@outlook.com"
+      }
+    ],
+    "groups": null,
+    "hash": "74684c597c22a3befd1703b6f4771dde146f1f670479fb2744a7d608ce17328d",
+    "warnings": [
+      "Con 2 participantes se usaron 2 equipos del pool de 20."
+    ]
+  },
+  {
+    "sorteo_id": "61fb2e6d-97c2-4b2d-a5dc-702767f1f8f2",
+    "timestamp": "2026-04-24T00:00:18.005744+00:00",
+    "mode": "simple",
+    "seed": null,
+    "participants": [
+      "Pipe Acevedo",
+      "Arrox",
+      "Javinho",
+      "Gabo",
+      "MBAPPÉDRO",
+      "Cristobal",
+      "Nico (negro)",
+      "Seba",
+      "Byron",
+      "Pedro M",
+      "Pablo",
+      "Jano",
+      "Jona",
+      "Diego"
+    ],
+    "pool": [
+      {
+        "name": "Real Madrid",
+        "type": "club",
+        "ovr": 88,
+        "att": 86,
+        "mid": 83,
+        "def": 86,
+        "bombo": 1,
+        "priority": 1
+      },
+      {
+        "name": "Manchester City",
+        "type": "club",
+        "ovr": 85,
+        "att": 85,
+        "mid": 82,
+        "def": 84,
+        "bombo": 1,
+        "priority": 2
+      },
+      {
+        "name": "Paris Saint-Germain",
+        "type": "club",
+        "ovr": 85,
+        "att": 85,
+        "mid": 86,
+        "def": 85,
+        "bombo": 1,
+        "priority": 3
+      },
+      {
+        "name": "FC Barcelona",
+        "type": "club",
+        "ovr": 85,
+        "att": 86,
+        "mid": 84,
+        "def": 81,
+        "bombo": 1,
+        "priority": 4
+      },
+      {
+        "name": "Bayern Munich",
+        "type": "club",
+        "ovr": 84,
+        "att": 85,
+        "mid": 83,
+        "def": 84,
+        "bombo": 2,
+        "priority": 7
+      },
+      {
+        "name": "Arsenal",
+        "type": "club",
+        "ovr": 84,
+        "att": 84,
+        "mid": 83,
+        "def": 84,
+        "bombo": 2,
+        "priority": 8
+      },
+      {
+        "name": "Liverpool",
+        "type": "club",
+        "ovr": 84,
+        "att": 84,
+        "mid": 83,
+        "def": 85,
+        "bombo": 2,
+        "priority": 9
+      },
+      {
+        "name": "Inter de Milán",
+        "type": "club",
+        "ovr": 83,
+        "att": 83,
+        "mid": 82,
+        "def": 83,
+        "bombo": 3,
+        "priority": 13
+      },
+      {
+        "name": "Chelsea",
+        "type": "club",
+        "ovr": 83,
+        "att": 83,
+        "mid": 82,
+        "def": 82,
+        "bombo": 4,
+        "priority": 16
+      },
+      {
+        "name": "Atlético Madrid",
+        "type": "club",
+        "ovr": 83,
+        "att": 82,
+        "mid": 82,
+        "def": 84,
+        "bombo": 4,
+        "priority": 17
+      },
+      {
+        "name": "Napoli",
+        "type": "club",
+        "ovr": 83,
+        "att": 82,
+        "mid": 82,
+        "def": 83,
+        "bombo": 4,
+        "priority": 18
+      },
+      {
+        "name": "Manchester United",
+        "type": "club",
+        "ovr": 82,
+        "att": 82,
+        "mid": 81,
+        "def": 82,
+        "bombo": 4,
+        "priority": 20
+      },
+      {
+        "name": "Francia",
+        "type": "nation",
+        "ovr": 85,
+        "att": 87,
+        "mid": 83,
+        "def": 85,
+        "bombo": 1,
+        "priority": 5
+      },
+      {
+        "name": "España",
+        "type": "nation",
+        "ovr": 85,
+        "att": 82,
+        "mid": 86,
+        "def": 83,
+        "bombo": 2,
+        "priority": 6
+      }
+    ],
+    "bombos": [
+      {
+        "numero": 1,
+        "equipos": [
+          {
+            "name": "Real Madrid",
+            "type": "club",
+            "ovr": 88,
+            "att": 86,
+            "mid": 83,
+            "def": 86,
+            "bombo": 1,
+            "priority": 1
+          },
+          {
+            "name": "Manchester City",
+            "type": "club",
+            "ovr": 85,
+            "att": 85,
+            "mid": 82,
+            "def": 84,
+            "bombo": 1,
+            "priority": 2
+          },
+          {
+            "name": "Paris Saint-Germain",
+            "type": "club",
+            "ovr": 85,
+            "att": 85,
+            "mid": 86,
+            "def": 85,
+            "bombo": 1,
+            "priority": 3
+          },
+          {
+            "name": "FC Barcelona",
+            "type": "club",
+            "ovr": 85,
+            "att": 86,
+            "mid": 84,
+            "def": 81,
+            "bombo": 1,
+            "priority": 4
+          }
+        ],
+        "ovr_range": "85-88"
+      },
+      {
+        "numero": 2,
+        "equipos": [
+          {
+            "name": "Francia",
+            "type": "nation",
+            "ovr": 85,
+            "att": 87,
+            "mid": 83,
+            "def": 85,
+            "bombo": 1,
+            "priority": 5
+          },
+          {
+            "name": "España",
+            "type": "nation",
+            "ovr": 85,
+            "att": 82,
+            "mid": 86,
+            "def": 83,
+            "bombo": 2,
+            "priority": 6
+          },
+          {
+            "name": "Bayern Munich",
+            "type": "club",
+            "ovr": 84,
+            "att": 85,
+            "mid": 83,
+            "def": 84,
+            "bombo": 2,
+            "priority": 7
+          },
+          {
+            "name": "Arsenal",
+            "type": "club",
+            "ovr": 84,
+            "att": 84,
+            "mid": 83,
+            "def": 84,
+            "bombo": 2,
+            "priority": 8
+          }
+        ],
+        "ovr_range": "84-85"
+      },
+      {
+        "numero": 3,
+        "equipos": [
+          {
+            "name": "Liverpool",
+            "type": "club",
+            "ovr": 84,
+            "att": 84,
+            "mid": 83,
+            "def": 85,
+            "bombo": 2,
+            "priority": 9
+          },
+          {
+            "name": "Inter de Milán",
+            "type": "club",
+            "ovr": 83,
+            "att": 83,
+            "mid": 82,
+            "def": 83,
+            "bombo": 3,
+            "priority": 13
+          },
+          {
+            "name": "Chelsea",
+            "type": "club",
+            "ovr": 83,
+            "att": 83,
+            "mid": 82,
+            "def": 82,
+            "bombo": 4,
+            "priority": 16
+          }
+        ],
+        "ovr_range": "83-84"
+      },
+      {
+        "numero": 4,
+        "equipos": [
+          {
+            "name": "Atlético Madrid",
+            "type": "club",
+            "ovr": 83,
+            "att": 82,
+            "mid": 82,
+            "def": 84,
+            "bombo": 4,
+            "priority": 17
+          },
+          {
+            "name": "Napoli",
+            "type": "club",
+            "ovr": 83,
+            "att": 82,
+            "mid": 82,
+            "def": 83,
+            "bombo": 4,
+            "priority": 18
+          },
+          {
+            "name": "Manchester United",
+            "type": "club",
+            "ovr": 82,
+            "att": 82,
+            "mid": 81,
+            "def": 82,
+            "bombo": 4,
+            "priority": 20
+          }
+        ],
+        "ovr_range": "82-83"
+      }
+    ],
+    "assignments": [
+      {
+        "participant": "Pipe Acevedo",
+        "team": "FC Barcelona",
+        "ovr": 85,
+        "bombo": 1,
+        "pick_order": 1,
+        "email": "felacevedoh@gmail.com"
+      },
+      {
+        "participant": "Arrox",
+        "team": "Manchester City",
+        "ovr": 85,
+        "bombo": 1,
+        "pick_order": 2,
+        "email": "andresarroz@gmail.com"
+      },
+      {
+        "participant": "Javinho",
+        "team": "Arsenal",
+        "ovr": 84,
+        "bombo": 2,
+        "pick_order": 3,
+        "email": "jlagosv.1996@gmail.com"
+      },
+      {
+        "participant": "Gabo",
+        "team": "Francia",
+        "ovr": 85,
+        "bombo": 2,
+        "pick_order": 4,
+        "email": "gabriel.morales.medina@gmail.com"
+      },
+      {
+        "participant": "MBAPPÉDRO",
+        "team": "Napoli",
+        "ovr": 83,
+        "bombo": 4,
+        "pick_order": 5,
+        "email": "lgopedro.services@gmail.com"
+      },
+      {
+        "participant": "Cristobal",
+        "team": "España",
+        "ovr": 85,
+        "bombo": 2,
+        "pick_order": 6,
+        "email": "⁠ ⁠⁠cris207@gmail.com"
+      },
+      {
+        "participant": "Nico (negro)",
+        "team": "Manchester United",
+        "ovr": 82,
+        "bombo": 4,
+        "pick_order": 7,
+        "email": "n.gzunigay@gmail.com"
+      },
+      {
+        "participant": "Seba",
+        "team": "Bayern Munich",
+        "ovr": 84,
+        "bombo": 2,
+        "pick_order": 8,
+        "email": "sbsmelipil@gmail.com"
+      },
+      {
+        "participant": "Byron",
+        "team": "Real Madrid",
+        "ovr": 88,
+        "bombo": 1,
+        "pick_order": 9,
+        "email": "byron.mauricio.t@gmail.com"
+      },
+      {
+        "participant": "Pedro M",
+        "team": "Inter de Milán",
+        "ovr": 83,
+        "bombo": 3,
+        "pick_order": 10,
+        "email": "pedromaluenda@gmail.com"
+      },
+      {
+        "participant": "Pablo",
+        "team": "Chelsea",
+        "ovr": 83,
+        "bombo": 3,
+        "pick_order": 11,
+        "email": "pablomaluec@gmail.com"
+      },
+      {
+        "participant": "Jano",
+        "team": "Paris Saint-Germain",
+        "ovr": 85,
+        "bombo": 1,
+        "pick_order": 12,
+        "email": "alejandro.araneda.herrera@gmail.com"
+      },
+      {
+        "participant": "Jona",
+        "team": "Liverpool",
+        "ovr": 84,
+        "bombo": 3,
+        "pick_order": 13,
+        "email": "jonaalexisram@gmail.com"
+      },
+      {
+        "participant": "Diego",
+        "team": "Atlético Madrid",
+        "ovr": 83,
+        "bombo": 4,
+        "pick_order": 14,
+        "email": "arteldiego@gmail.com"
+      }
+    ],
+    "groups": null,
+    "hash": "453723cb17fe97323fd097dbd0841b487cb992dd363056027d05863f24622801",
+    "warnings": [
+      "Con 14 participantes se usaron 14 equipos del pool de 20."
+    ]
+  }
+]

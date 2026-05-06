@@ -23,3 +23,5 @@ frontend/*.tsbuildinfo
 .vscode/
 *.swp
 .DS_Store
+frontend/dist-pwa/
+frontend/dev-dist/

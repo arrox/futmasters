@@ -1,4 +1,5 @@
-import type { Player } from "../api/client";
+import { useState } from "react";
+import type { Player, StandingRow } from "../api/client";
 import { api } from "../api/client";
 
 type Tier = "gold" | "silver" | "bronze" | "totw" | "icon" | "hero";
@@ -8,12 +9,11 @@ interface Props {
   size?: "sm" | "md" | "lg";
   tierOverride?: Tier;
   className?: string;
+  standing?: StandingRow | null;
+  flippable?: boolean;
 }
 
 function tierFor(ovr: number, teamType: "club" | "nation"): Tier {
-  // Regla FUT: solo elite (Real Madrid / Messi-like) → Icon; alto → Gold;
-  // medio → Silver; bajo → Bronze. Las selecciones fuertes entran como
-  // TOTW para romper la monotonía visual cuando son tier 2.
   if (ovr >= 87) return "icon";
   if (ovr >= 84) return "gold";
   if (ovr >= 82 && teamType === "nation") return "totw";
@@ -40,21 +40,33 @@ export default function FutCard({
   size = "md",
   tierOverride,
   className = "",
+  standing = null,
+  flippable = false,
 }: Props) {
+  const [flipped, setFlipped] = useState(false);
   const tier = tierOverride ?? tierFor(player.team_ovr, player.team_type);
   const photo = api.mediaUrl(player.photo_filename);
   const sizeClass = size === "sm" ? "fut-card--sm" : size === "lg" ? "fut-card--lg" : "";
 
-  return (
-    <div className={`fut-card fut-card--${tier} ${sizeClass} ${className}`}>
+  const canFlip = flippable && !!standing;
+
+  const front = (
+    <div
+      className={`fut-card fut-card--${tier} ${sizeClass} ${className} ${photo ? "has-photo" : ""}`}
+    >
+      {photo && (
+        <div className="fut-card__photo" aria-hidden>
+          <img src={photo} alt="" />
+        </div>
+      )}
       <div className="fut-card__top">
-        <div>
+        <div className="fut-card__meta">
           <div className="fut-card__ovr">{player.team_ovr}</div>
           <div className="fut-card__pos">{positionFor(player)}</div>
         </div>
-        <div className="fut-card__crest">
-          {photo ? <img src={photo} alt={player.display_name} /> : initials(player.display_name)}
-        </div>
+        {!photo && (
+          <div className="fut-card__crest">{initials(player.display_name)}</div>
+        )}
       </div>
       <div className="fut-card__mid" />
       <div className="fut-card__name">{player.display_name}</div>
@@ -75,6 +87,99 @@ export default function FutCard({
           <div className="s-lbl">DEF</div>
         </div>
       </div>
+      {canFlip && (
+        <button
+          type="button"
+          className="fut-card__flip-hint"
+          onClick={(e) => {
+            e.stopPropagation();
+            setFlipped(true);
+          }}
+          aria-label="Ver estadísticas del torneo"
+        >
+          ↻
+        </button>
+      )}
+    </div>
+  );
+
+  if (!canFlip) return front;
+
+  const back = (
+    <div className={`stats-back ${sizeClass}`}>
+      <div className="stats-back__header">
+        <div className="stats-back__pos">
+          {standing!.group_position || "—"}
+        </div>
+        <div className="stats-back__id">
+          <div className="stats-back__name">{player.display_name}</div>
+          <div className="stats-back__scope">
+            {player.group_label ? `Grupo ${player.group_label}` : "Torneo"}
+          </div>
+        </div>
+      </div>
+      <div className="stats-back__grid">
+        <BackStat label="PJ" value={standing!.pj} />
+        <BackStat label="PTS" value={standing!.pts} highlight="gold" />
+        <BackStat label="G" value={standing!.pg} highlight="green" />
+        <BackStat label="E" value={standing!.pe} />
+        <BackStat label="P" value={standing!.pp} highlight="red" />
+        <BackStat label="GF" value={standing!.gf} />
+        <BackStat label="GC" value={standing!.gc} />
+        <BackStat
+          label="DIF"
+          value={`${standing!.dif > 0 ? "+" : ""}${standing!.dif}`}
+          highlight={standing!.dif > 0 ? "green" : standing!.dif < 0 ? "red" : undefined}
+        />
+      </div>
+      <button
+        type="button"
+        className="stats-back__close"
+        onClick={(e) => {
+          e.stopPropagation();
+          setFlipped(false);
+        }}
+        aria-label="Volver al frente"
+      >
+        ↻
+      </button>
+    </div>
+  );
+
+  return (
+    <div
+      className={`fut-card-flip ${sizeClass} ${flipped ? "fut-card-flip--flipped" : ""}`}
+      onClick={() => setFlipped((f) => !f)}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          setFlipped((f) => !f);
+        }
+      }}
+    >
+      <div className="fut-card-flip__inner">
+        <div className="fut-card-flip__face fut-card-flip__front">{front}</div>
+        <div className="fut-card-flip__face fut-card-flip__back">{back}</div>
+      </div>
+    </div>
+  );
+}
+
+function BackStat({
+  label,
+  value,
+  highlight,
+}: {
+  label: string;
+  value: number | string;
+  highlight?: "green" | "red" | "gold";
+}) {
+  return (
+    <div className={`stats-back__stat ${highlight ? `stats-back__stat--${highlight}` : ""}`}>
+      <span className="stats-back__stat-v">{value}</span>
+      <span className="stats-back__stat-k">{label}</span>
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import type { Match, Player } from "../api/client";
+import { api } from "../api/client";
 import { shareMatchResult } from "../api/share";
 
 interface Props {
@@ -144,53 +145,68 @@ function MatchRow({
     }
   }
 
+  const homePhoto = home ? api.mediaUrl(home.photo_filename) : null;
+  const awayPhoto = away ? api.mediaUrl(away.photo_filename) : null;
+  const played = match.status === "played";
+
   return (
-    <li className="flex items-center gap-3 flex-wrap bg-bg/40 border border-soft/40 rounded-md px-3 py-2">
-      <div className="flex-1 flex items-center justify-between gap-2 min-w-[260px]">
-        <div className="flex-1 text-right">
-          <div className="font-medium">{home?.display_name ?? (match.slot_home ?? "—")}</div>
-          <div className="text-xs text-slate-400">{home?.team_name ?? ""}</div>
-        </div>
-        <div className="flex items-center gap-2 mono">
+    <li className="scoreboard">
+      <div className="scoreboard__main">
+        <PlayerSide
+          side="home"
+          name={home?.display_name ?? match.slot_home ?? "—"}
+          team={home?.team_name ?? ""}
+          ovr={home?.team_ovr ?? null}
+          photo={homePhoto}
+        />
+        <div className="scoreboard__score">
           {editable && !awaitingPlayers ? (
-            <>
+            <div className="scoreboard__inputs">
               <input
                 type="number"
                 min={0}
                 max={99}
                 value={h}
                 onChange={(e) => setH(e.target.value)}
-                className="input w-12 text-center px-1"
+                className="scoreboard__input"
+                aria-label="Goles local"
               />
-              <span className="text-slate-500">vs</span>
+              <span className="scoreboard__sep">:</span>
               <input
                 type="number"
                 min={0}
                 max={99}
                 value={a}
                 onChange={(e) => setA(e.target.value)}
-                className="input w-12 text-center px-1"
+                className="scoreboard__input"
+                aria-label="Goles visitante"
               />
-            </>
+            </div>
           ) : (
-            <>
-              <span className="text-xl font-bold w-8 text-center">
-                {match.home_score ?? "—"}
+            <div className="scoreboard__digits" data-played={played}>
+              <span className="scoreboard__digit">
+                {match.home_score ?? "–"}
               </span>
-              <span className="text-slate-500 text-xs">vs</span>
-              <span className="text-xl font-bold w-8 text-center">
-                {match.away_score ?? "—"}
+              <span className="scoreboard__sep">:</span>
+              <span className="scoreboard__digit">
+                {match.away_score ?? "–"}
               </span>
-            </>
+            </div>
           )}
+          <div className="scoreboard__status">
+            {played ? "FIN" : awaitingPlayers ? "POR DEFINIR" : "PROGRAMADO"}
+          </div>
         </div>
-        <div className="flex-1">
-          <div className="font-medium">{away?.display_name ?? (match.slot_away ?? "—")}</div>
-          <div className="text-xs text-slate-400">{away?.team_name ?? ""}</div>
-        </div>
+        <PlayerSide
+          side="away"
+          name={away?.display_name ?? match.slot_away ?? "—"}
+          team={away?.team_name ?? ""}
+          ovr={away?.team_ovr ?? null}
+          photo={awayPhoto}
+        />
       </div>
       {editable && (
-        <div className="flex gap-1 items-center">
+        <div className="scoreboard__actions">
           {awaitingPlayers ? (
             <span className="text-xs text-slate-500">esperando ganadores</span>
           ) : (
@@ -216,10 +232,7 @@ function MatchRow({
         </div>
       )}
       {match.status === "played" && (
-        <div className="flex gap-1 items-center">
-          {!editable && (
-            <span className="chip text-[10px]">✓ jugado</span>
-          )}
+        <div className="scoreboard__actions">
           {tournamentId && home && away && (
             <a
               className="btn btn-green"
@@ -251,6 +264,41 @@ function MatchRow({
         <span className="text-coral text-xs basis-full">{error}</span>
       )}
     </li>
+  );
+}
+
+interface PlayerSideProps {
+  side: "home" | "away";
+  name: string;
+  team: string;
+  ovr: number | null;
+  photo: string | null;
+}
+
+function PlayerSide({ side, name, team, ovr, photo }: PlayerSideProps) {
+  return (
+    <div className={`scoreboard__side scoreboard__side--${side}`}>
+      <div className="scoreboard__avatar">
+        {photo ? (
+          <img src={photo} alt={name} />
+        ) : (
+          <span className="scoreboard__initials">
+            {name
+              .split(/\s+/)
+              .map((w) => w[0])
+              .filter(Boolean)
+              .slice(0, 2)
+              .join("")
+              .toUpperCase()}
+          </span>
+        )}
+        {ovr !== null && <span className="scoreboard__ovr">{ovr}</span>}
+      </div>
+      <div className="scoreboard__info">
+        <div className="scoreboard__name">{name}</div>
+        {team && <div className="scoreboard__team">{team}</div>}
+      </div>
+    </div>
   );
 }
 

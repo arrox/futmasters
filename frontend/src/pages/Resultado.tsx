@@ -75,24 +75,27 @@ export default function Resultado() {
           <div className="flex items-center justify-between flex-wrap gap-2">
             <h1 className="text-2xl font-bold">Resultado del sorteo</h1>
             <div className="flex flex-wrap gap-2">
-              <a
+              <button
+                type="button"
                 className="btn btn-ghost text-sm"
-                href={api.exportUrl(sorteo.sorteo_id, "csv")}
+                onClick={() => api.downloadExport(sorteo, "csv")}
               >
                 Exportar CSV
-              </a>
-              <a
+              </button>
+              <button
+                type="button"
                 className="btn btn-ghost text-sm"
-                href={api.exportUrl(sorteo.sorteo_id, "json")}
+                onClick={() => api.downloadExport(sorteo, "json")}
               >
                 Exportar JSON
-              </a>
-              <a
+              </button>
+              <button
+                type="button"
                 className="btn btn-ghost text-sm"
-                href={api.exportUrl(sorteo.sorteo_id, "md")}
+                onClick={() => api.downloadExport(sorteo, "md")}
               >
                 Exportar MD
-              </a>
+              </button>
               <button className="btn btn-ghost text-sm" onClick={shareLink}>
                 {copiedLink ? "✓ Enlace copiado" : "Compartir enlace"}
               </button>

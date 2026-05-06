@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import type {
   Registration,
@@ -7,6 +7,8 @@ import type {
   TournamentFormat,
 } from "../api/client";
 import { adminToken, api } from "../api/client";
+
+type Tab = "registrations" | "tournaments" | "sorteos";
 
 export default function AdminHome() {
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
@@ -20,9 +22,12 @@ export default function AdminHome() {
   } | null>(null);
   const [waSending, setWaSending] = useState(false);
   const [waMsg, setWaMsg] = useState<string | null>(null);
+  const [tab, setTab] = useState<Tab>("registrations");
+  const [loading, setLoading] = useState(true);
   const nav = useNavigate();
 
   async function load() {
+    setLoading(true);
     try {
       const [ts, s, r, wa] = await Promise.all([
         api.listTournaments(),
@@ -36,6 +41,8 @@ export default function AdminHome() {
       setWaStatus(wa);
     } catch (e) {
       setErr((e as Error).message);
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -44,11 +51,7 @@ export default function AdminHome() {
     setWaMsg(null);
     try {
       const r = await api.whatsappTest();
-      setWaMsg(
-        r.sent
-          ? `✓ ${r.detail}`
-          : `✗ ${r.detail}`,
-      );
+      setWaMsg(r.sent ? `✓ ${r.detail}` : `✗ ${r.detail}`);
       setTimeout(() => setWaMsg(null), 6000);
     } catch (e) {
       setWaMsg(`✗ ${(e as Error).message}`);
@@ -57,15 +60,18 @@ export default function AdminHome() {
     }
   }
 
-  const pending = regs.filter((r) => r.status === "pending");
+  const pending = useMemo(() => regs.filter((r) => r.status === "pending"), [regs]);
+  const used = useMemo(() => regs.filter((r) => r.status === "used"), [regs]);
+  const activeTournaments = useMemo(
+    () => tournaments.filter((t) => t.status !== "finished"),
+    [tournaments],
+  );
 
   function sortearConInscriptos() {
     if (pending.length < 2) {
       alert("Se necesitan al menos 2 inscritos pendientes.");
       return;
     }
-    // Persistimos los IDs seleccionados en sessionStorage para que
-    // /admin/sorteo los levante y precargue la lista.
     sessionStorage.setItem(
       "fc26_prefill_regs",
       JSON.stringify(pending.map((r) => ({ name: r.name, email: r.email }))),
@@ -103,176 +109,162 @@ export default function AdminHome() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between flex-wrap gap-2">
-        <div>
-          <div className="fm-eyebrow">Panel</div>
-          <h1 className="fm-h1 mt-1" style={{ fontSize: 36 }}>
-            Admin
-          </h1>
+    <div className="admin-shell">
+      {/* Header */}
+      <header className="admin-header">
+        <div className="admin-header__title">
+          <div className="fm-eyebrow">Panel de control</div>
+          <h1 className="admin-header__h1">Admin · FC 26</h1>
         </div>
-        <div className="flex gap-2 flex-wrap">
-          <button
-            className="btn btn-green"
-            onClick={sortearConInscriptos}
-            disabled={pending.length < 2}
-            title={
-              pending.length < 2
-                ? "Se necesitan al menos 2 inscritos para sortear."
-                : undefined
-            }
-          >
-            🎲 Sortear con {pending.length} inscrito{pending.length === 1 ? "" : "s"}
-          </button>
-          <Link to="/admin/sorteo" className="btn btn-ghost">
-            Sortear manualmente
-          </Link>
-          <button
-            className="btn btn-primary"
-            onClick={() => setShowCreate(true)}
-            disabled={sorteos.length === 0}
-          >
-            + Nuevo torneo
+        <div className="admin-header__actions">
+          <button className="btn btn-ghost" onClick={load} disabled={loading}>
+            {loading ? "…" : "↻ Refrescar"}
           </button>
           <button className="btn btn-ghost" onClick={logout}>
             Salir
           </button>
         </div>
-      </div>
+      </header>
 
-      {waStatus && (
-        <div className="fm-surface">
-          <div className="flex items-center justify-between flex-wrap gap-2">
-            <div>
-              <div className="fm-eyebrow">Notificaciones</div>
-              <h2 className="fm-h2 mt-1">WhatsApp</h2>
-            </div>
-            <div className="flex items-center gap-2">
-              <span
-                className={`chip ${
-                  waStatus.configured ? "chip--green" : ""
-                }`}
-              >
-                {waStatus.configured
-                  ? `✓ Twilio activo · ${waStatus.recipients_count} destinatarios`
-                  : "Twilio no configurado"}
-              </span>
-              <button
-                className="btn btn-ghost"
-                style={{ fontSize: 11, padding: "6px 12px" }}
-                onClick={testWhatsApp}
-                disabled={waSending}
-              >
-                {waSending ? "Enviando…" : "Probar"}
-              </button>
-            </div>
-          </div>
-          {waMsg && (
-            <div
-              className="mt-2 text-xs"
-              style={{
-                color: waMsg.startsWith("✓")
-                  ? "var(--fm-fut-green)"
-                  : "var(--fm-danger)",
-              }}
-            >
-              {waMsg}
-            </div>
-          )}
-          {!waStatus.configured && (
-            <p
-              className="text-xs mt-2"
-              style={{ color: "var(--fm-ink-muted)", lineHeight: 1.6 }}
-            >
-              Configura las variables de entorno{" "}
-              <code className="mono">TWILIO_ACCOUNT_SID</code>,{" "}
-              <code className="mono">TWILIO_AUTH_TOKEN</code>,{" "}
-              <code className="mono">TWILIO_FROM</code> y{" "}
-              <code className="mono">WHATSAPP_RECIPIENTS</code> en{" "}
-              <code>.env.local</code> y reinicia el backend.
-            </p>
-          )}
+      {/* Stats tiles */}
+      <section className="stat-grid">
+        <StatTile
+          label="Inscritos pendientes"
+          value={pending.length}
+          hint={`${used.length} ya asignados`}
+          intent={pending.length >= 2 ? "success" : "neutral"}
+          icon="👥"
+        />
+        <StatTile
+          label="Sorteos realizados"
+          value={sorteos.length}
+          hint={sorteos[0]?.timestamp.slice(0, 10) ?? "—"}
+          intent="neutral"
+          icon="🎲"
+        />
+        <StatTile
+          label="Torneos activos"
+          value={activeTournaments.length}
+          hint={`${tournaments.length} en total`}
+          intent={activeTournaments.length > 0 ? "primary" : "neutral"}
+          icon="🏆"
+        />
+        <StatTile
+          label="WhatsApp"
+          value={waStatus?.configured ? waStatus.recipients_count : "—"}
+          hint={waStatus?.configured ? "destinatarios activos" : "no configurado"}
+          intent={waStatus?.configured ? "success" : "warning"}
+          icon="💬"
+        />
+      </section>
+
+      {/* Quick actions */}
+      <section className="admin-actions">
+        <button
+          className="btn btn-green"
+          onClick={sortearConInscriptos}
+          disabled={pending.length < 2}
+          title={
+            pending.length < 2
+              ? "Se necesitan al menos 2 inscritos para sortear."
+              : undefined
+          }
+        >
+          🎲 Sortear con {pending.length} inscrito{pending.length === 1 ? "" : "s"}
+        </button>
+        <Link to="/admin/sorteo" className="btn btn-ghost">
+          ✎ Sortear manualmente
+        </Link>
+        <button
+          className="btn btn-primary"
+          onClick={() => setShowCreate(true)}
+          disabled={sorteos.length === 0}
+          title={sorteos.length === 0 ? "Primero ejecutá un sorteo" : undefined}
+        >
+          + Nuevo torneo
+        </button>
+        {waStatus && (
+          <button
+            className="btn btn-ghost"
+            onClick={testWhatsApp}
+            disabled={waSending || !waStatus.configured}
+          >
+            {waSending ? "Probando…" : "💬 Test WhatsApp"}
+          </button>
+        )}
+      </section>
+
+      {waMsg && (
+        <div
+          className={`admin-banner ${
+            waMsg.startsWith("✓") ? "admin-banner--ok" : "admin-banner--err"
+          }`}
+        >
+          {waMsg}
         </div>
       )}
+      {err && <div className="admin-banner admin-banner--err">{err}</div>}
 
-      <div className="fm-surface">
-        <div className="flex items-center justify-between mb-3">
-          <div>
-            <div className="fm-eyebrow">Registrations</div>
-            <h2 className="fm-h2 mt-1">Inscritos</h2>
-          </div>
-          <span className="chip">
-            {pending.length} pendiente{pending.length === 1 ? "" : "s"}
-          </span>
-        </div>
-        {regs.length === 0 ? (
-          <p
-            className="text-sm"
-            style={{ color: "var(--fm-ink-muted)" }}
-          >
-            Aún no hay personas inscritas. Cuando alguien se registre en{" "}
-            <code>/</code>, aparecerá aquí.
-          </p>
-        ) : (
-          <ul className="divide-y divide-soft/30">
-            {regs.map((r) => (
-              <li
-                key={r.id}
-                className="flex items-center justify-between py-2 gap-2"
-              >
-                <div className="min-w-0">
-                  <div
-                    style={{
-                      fontFamily: "var(--fm-font-sans)",
-                      fontWeight: 500,
-                    }}
-                  >
-                    {r.name}{" "}
-                    {r.status === "used" && (
-                      <span className="chip chip--green" style={{ marginLeft: 6 }}>
-                        usado
-                      </span>
-                    )}
-                    {r.status === "removed" && (
-                      <span
-                        className="chip"
-                        style={{
-                          marginLeft: 6,
-                          opacity: 0.6,
-                        }}
-                      >
-                        eliminado
-                      </span>
-                    )}
-                  </div>
-                  <div
-                    className="mono text-xs truncate"
-                    style={{ color: "var(--fm-ink-muted)" }}
-                  >
-                    {r.email}
-                  </div>
-                </div>
-                <div className="mono text-xs" style={{ color: "var(--fm-ink-dim)" }}>
-                  {r.created_at.slice(0, 16).replace("T", " ")}
-                </div>
-                {r.status === "pending" && (
-                  <button
-                    className="btn btn-ghost text-xs text-coral"
-                    onClick={() => removeReg(r.id)}
-                  >
-                    ✕
-                  </button>
-                )}
-              </li>
-            ))}
-          </ul>
-        )}
+      {/* Tabs */}
+      <div className="admin-tabs">
+        <TabButton
+          active={tab === "registrations"}
+          onClick={() => setTab("registrations")}
+          label="Inscritos"
+          badge={pending.length || undefined}
+        />
+        <TabButton
+          active={tab === "tournaments"}
+          onClick={() => setTab("tournaments")}
+          label="Torneos"
+          badge={tournaments.length || undefined}
+        />
+        <TabButton
+          active={tab === "sorteos"}
+          onClick={() => setTab("sorteos")}
+          label="Sorteos"
+          badge={sorteos.length || undefined}
+        />
       </div>
 
-      {err && <p className="text-coral text-sm">{err}</p>}
+      {/* Content */}
+      {tab === "registrations" && (
+        <RegistrationsPanel regs={regs} onRemove={removeReg} />
+      )}
+      {tab === "tournaments" && (
+        <TournamentsPanel
+          tournaments={tournaments}
+          sorteosAvailable={sorteos.length > 0}
+          onRemove={remove}
+          onCreate={() => setShowCreate(true)}
+        />
+      )}
+      {tab === "sorteos" && <SorteosPanel sorteos={sorteos} />}
 
+      {/* WhatsApp detail if missing config */}
+      {waStatus && !waStatus.configured && (
+        <section className="fm-surface" style={{ marginTop: 16 }}>
+          <div className="fm-eyebrow">Notificaciones</div>
+          <h2 className="fm-h2" style={{ marginTop: 4 }}>
+            WhatsApp no configurado
+          </h2>
+          <p
+            className="text-xs mt-2"
+            style={{ color: "var(--fm-ink-muted)", lineHeight: 1.6 }}
+          >
+            Definí las variables{" "}
+            <code className="mono">TWILIO_ACCOUNT_SID</code>,{" "}
+            <code className="mono">TWILIO_AUTH_TOKEN</code>,{" "}
+            <code className="mono">TWILIO_FROM</code> y{" "}
+            <code className="mono">WHATSAPP_RECIPIENTS</code> en{" "}
+            <code>backend/.env.local</code> y reiniciá el servicio.
+          </p>
+        </section>
+      )}
+
+      {/* Create modal */}
       {showCreate && (
-        <CreateTournamentForm
+        <CreateTournamentModal
           sorteos={sorteos}
           onCancel={() => setShowCreate(false)}
           onCreated={(t) => {
@@ -281,60 +273,252 @@ export default function AdminHome() {
           }}
         />
       )}
+    </div>
+  );
+}
 
-      <div className="card">
-        <h2 className="text-lg font-semibold mb-3">Torneos</h2>
-        {tournaments.length === 0 ? (
-          <p className="text-slate-400 text-sm">
-            Aún no hay torneos.{" "}
-            {sorteos.length === 0
-              ? "Primero ejecuta un sorteo."
-              : "Crea uno a partir de un sorteo existente."}
-          </p>
-        ) : (
-          <ul className="divide-y divide-soft/30">
-            {tournaments.map((t) => (
-              <li
-                key={t.id}
-                className="py-2 flex items-center justify-between gap-3"
-              >
-                <div className="flex-1 min-w-0">
-                  <Link
-                    to={`/admin/tournaments/${t.id}`}
-                    className="font-medium hover:text-accent"
-                  >
-                    {t.name}
-                  </Link>
-                  <div className="text-xs text-slate-400 flex gap-3 flex-wrap">
-                    <span className="chip">{statusLabel(t.status)}</span>
-                    <span>{formatLabel(t.format)}</span>
-                    <span className="mono">{t.created_at.slice(0, 19)}</span>
-                  </div>
-                </div>
-                <div className="flex gap-2 items-center">
-                  <Link
-                    to={`/t/${t.id}`}
-                    className="btn btn-ghost text-xs"
-                  >
-                    Ver público
-                  </Link>
-                  <button
-                    className="btn btn-ghost text-xs text-coral"
-                    onClick={() => remove(t.id)}
-                  >
-                    ✕
-                  </button>
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
+// ---------- Reusable pieces ----------
+
+function StatTile({
+  label,
+  value,
+  hint,
+  intent,
+  icon,
+}: {
+  label: string;
+  value: number | string;
+  hint: string;
+  intent: "success" | "primary" | "warning" | "neutral";
+  icon: string;
+}) {
+  return (
+    <div className={`stat-tile stat-tile--${intent}`}>
+      <div className="stat-tile__icon" aria-hidden>
+        {icon}
+      </div>
+      <div className="stat-tile__body">
+        <div className="stat-tile__label">{label}</div>
+        <div className="stat-tile__value">{value}</div>
+        <div className="stat-tile__hint">{hint}</div>
       </div>
     </div>
   );
 }
 
-function CreateTournamentForm({
+function TabButton({
+  active,
+  onClick,
+  label,
+  badge,
+}: {
+  active: boolean;
+  onClick: () => void;
+  label: string;
+  badge?: number;
+}) {
+  return (
+    <button
+      type="button"
+      className={`admin-tab ${active ? "admin-tab--active" : ""}`}
+      onClick={onClick}
+    >
+      <span>{label}</span>
+      {badge !== undefined && <span className="admin-tab__badge">{badge}</span>}
+    </button>
+  );
+}
+
+function RegistrationsPanel({
+  regs,
+  onRemove,
+}: {
+  regs: Registration[];
+  onRemove: (id: number) => void;
+}) {
+  if (regs.length === 0) {
+    return (
+      <EmptyState
+        emoji="📝"
+        title="Sin inscritos todavía"
+        body={
+          <>
+            Compartí el link público de inscripción en <code>/</code>. Cuando
+            alguien se registre, va a aparecer acá.
+          </>
+        }
+      />
+    );
+  }
+  return (
+    <div className="admin-list">
+      {regs.map((r) => (
+        <div key={r.id} className="admin-list__row">
+          <div className="admin-list__main">
+            <div className="admin-list__title">
+              {r.name}
+              {r.status === "used" && (
+                <span className="chip chip--green">usado</span>
+              )}
+              {r.status === "removed" && (
+                <span className="chip" style={{ opacity: 0.6 }}>
+                  eliminado
+                </span>
+              )}
+            </div>
+            <div className="admin-list__sub mono">{r.email}</div>
+          </div>
+          <div className="admin-list__meta mono">
+            {r.created_at.slice(0, 16).replace("T", " ")}
+          </div>
+          {r.status === "pending" && (
+            <button
+              className="btn btn-ghost text-xs"
+              style={{ color: "var(--fm-danger)" }}
+              onClick={() => onRemove(r.id)}
+              aria-label={`Eliminar a ${r.name}`}
+            >
+              ✕
+            </button>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function TournamentsPanel({
+  tournaments,
+  sorteosAvailable,
+  onRemove,
+  onCreate,
+}: {
+  tournaments: Tournament[];
+  sorteosAvailable: boolean;
+  onRemove: (id: string) => void;
+  onCreate: () => void;
+}) {
+  if (tournaments.length === 0) {
+    return (
+      <EmptyState
+        emoji="🏆"
+        title="Aún no hay torneos"
+        body={
+          sorteosAvailable
+            ? "Creá un torneo a partir de un sorteo existente."
+            : "Primero ejecutá un sorteo y después convertilo en torneo."
+        }
+        action={
+          sorteosAvailable ? (
+            <button className="btn btn-primary" onClick={onCreate}>
+              + Nuevo torneo
+            </button>
+          ) : undefined
+        }
+      />
+    );
+  }
+  return (
+    <div className="admin-list">
+      {tournaments.map((t) => (
+        <div key={t.id} className="admin-list__row">
+          <div className="admin-list__main">
+            <Link
+              to={`/admin/tournaments/${t.id}`}
+              className="admin-list__title admin-list__title--link"
+            >
+              {t.name}
+            </Link>
+            <div className="admin-list__sub">
+              <span className={`chip chip--${statusChip(t.status)}`}>
+                {statusLabel(t.status)}
+              </span>
+              <span>{formatLabel(t.format)}</span>
+              <span className="mono">{t.created_at.slice(0, 10)}</span>
+            </div>
+          </div>
+          <Link to={`/t/${t.id}`} className="btn btn-ghost text-xs">
+            Ver público ↗
+          </Link>
+          <button
+            className="btn btn-ghost text-xs"
+            style={{ color: "var(--fm-danger)" }}
+            onClick={() => onRemove(t.id)}
+            aria-label={`Eliminar ${t.name}`}
+          >
+            ✕
+          </button>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function SorteosPanel({ sorteos }: { sorteos: SorteoListItem[] }) {
+  if (sorteos.length === 0) {
+    return (
+      <EmptyState
+        emoji="🎲"
+        title="Sin sorteos"
+        body="Cuando ejecutes un sorteo vas a ver acá el historial."
+      />
+    );
+  }
+  return (
+    <div className="admin-list">
+      {sorteos.map((s) => (
+        <Link
+          key={s.id}
+          to={`/resultado/${s.id}`}
+          className="admin-list__row admin-list__row--linkable"
+        >
+          <div className="admin-list__main">
+            <div className="admin-list__title">
+              {s.mode}{" "}
+              <span className="chip" style={{ marginLeft: 6 }}>
+                N={s.num_participants}
+              </span>
+              {s.seed !== null && (
+                <span className="chip" style={{ marginLeft: 6 }}>
+                  seed {s.seed}
+                </span>
+              )}
+            </div>
+            <div className="admin-list__sub mono text-xs">
+              {s.hash.slice(0, 16)}…
+            </div>
+          </div>
+          <div className="admin-list__meta mono">
+            {s.timestamp.slice(0, 16).replace("T", " ")}
+          </div>
+        </Link>
+      ))}
+    </div>
+  );
+}
+
+function EmptyState({
+  emoji,
+  title,
+  body,
+  action,
+}: {
+  emoji: string;
+  title: string;
+  body: React.ReactNode;
+  action?: React.ReactNode;
+}) {
+  return (
+    <div className="empty-state">
+      <div className="empty-state__emoji">{emoji}</div>
+      <h3 className="empty-state__title">{title}</h3>
+      <p className="empty-state__body">{body}</p>
+      {action && <div className="empty-state__action">{action}</div>}
+    </div>
+  );
+}
+
+function CreateTournamentModal({
   sorteos,
   onCancel,
   onCreated,
@@ -375,126 +559,142 @@ function CreateTournamentForm({
   }
 
   return (
-    <div className="card space-y-3">
-      <h2 className="text-lg font-semibold">Crear torneo</h2>
-      <div>
-        <label className="text-xs text-slate-400 block mb-1">Nombre</label>
-        <input
-          className="input w-full"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="Copa FutMasters 2026"
-        />
-      </div>
-      <div>
-        <label className="text-xs text-slate-400 block mb-1">
-          Sorteo base
-        </label>
-        <select
-          className="input w-full"
-          value={sorteoId}
-          onChange={(e) => setSorteoId(e.target.value)}
-        >
-          {sorteos.map((s) => (
-            <option key={s.id} value={s.id}>
-              {s.timestamp.slice(0, 19)} — {s.num_participants} jugadores — {s.mode}
-            </option>
-          ))}
-        </select>
-      </div>
-      <div>
-        <label className="text-xs text-slate-400 block mb-1">Formato</label>
-        <select
-          className="input w-full"
-          value={format}
-          onChange={(e) => setFormat(e.target.value as TournamentFormat)}
-        >
-          <option value="groups_knockout">
-            Grupos + eliminación directa (Champions/Mundial)
-          </option>
-          <option value="knockout">
-            Eliminación directa (bracket puro, N potencia de 2)
-          </option>
-          <option value="league">Liga todos contra todos</option>
-        </select>
-      </div>
-      {format === "knockout" && selected && (
-        <p
-          className="text-xs"
-          style={{
-            color: isPowerOf2(selected.num_participants)
-              ? "var(--fm-ink-muted)"
-              : "var(--fm-danger)",
-          }}
-        >
-          {selected.num_participants} participantes —{" "}
-          {isPowerOf2(selected.num_participants)
-            ? "✓ bracket válido"
-            : "✗ no es potencia de 2 (usa 2, 4, 8 o 16)"}
-        </p>
-      )}
-      {format === "groups_knockout" && (
-        <div className="grid grid-cols-2 gap-3">
+    <div
+      className="modal-backdrop"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onCancel();
+      }}
+    >
+      <div className="modal-panel">
+        <div className="modal-panel__header">
           <div>
-            <label className="text-xs text-slate-400 block mb-1">
-              Nº grupos
-            </label>
+            <div className="fm-eyebrow">Crear</div>
+            <h2 className="fm-h2" style={{ marginTop: 4 }}>
+              Nuevo torneo
+            </h2>
+          </div>
+          <button
+            className="btn btn-ghost text-sm"
+            onClick={onCancel}
+            aria-label="Cerrar"
+          >
+            ✕
+          </button>
+        </div>
+        <div className="modal-panel__body">
+          <div className="form-field">
+            <label>Nombre</label>
             <input
-              type="number"
               className="input w-full"
-              min={1}
-              max={8}
-              value={numGroups}
-              onChange={(e) => setNumGroups(Number(e.target.value))}
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Copa FutMasters 2026"
+              autoFocus
             />
           </div>
-          <div>
-            <label className="text-xs text-slate-400 block mb-1">
-              Clasifican por grupo
-            </label>
-            <input
-              type="number"
+          <div className="form-field">
+            <label>Sorteo base</label>
+            <select
               className="input w-full"
-              min={1}
-              max={8}
-              value={qualify}
-              onChange={(e) => setQualify(Number(e.target.value))}
-            />
+              value={sorteoId}
+              onChange={(e) => setSorteoId(e.target.value)}
+            >
+              {sorteos.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.timestamp.slice(0, 10)} — {s.num_participants} jugadores — {s.mode}
+                </option>
+              ))}
+            </select>
           </div>
-          {selected && (
-            <div className="col-span-2 text-xs text-slate-400">
-              {selected.num_participants} jugadores →{" "}
-              {selected.num_participants / numGroups} por grupo (debe ser un
-              entero) → {numGroups * qualify} clasificados (debe ser potencia
-              de 2: 2, 4, 8, 16).
+          <div className="form-field">
+            <label>Formato</label>
+            <select
+              className="input w-full"
+              value={format}
+              onChange={(e) => setFormat(e.target.value as TournamentFormat)}
+            >
+              <option value="groups_knockout">Grupos + eliminación directa</option>
+              <option value="knockout">Eliminación directa (bracket)</option>
+              <option value="league">Liga (todos contra todos)</option>
+            </select>
+          </div>
+          {format === "knockout" && selected && (
+            <p
+              className="form-hint"
+              style={{
+                color: isPowerOf2(selected.num_participants)
+                  ? "var(--fm-ink-muted)"
+                  : "var(--fm-danger)",
+              }}
+            >
+              {selected.num_participants} participantes —{" "}
+              {isPowerOf2(selected.num_participants)
+                ? "✓ bracket válido"
+                : "✗ no es potencia de 2 (usá 2, 4, 8 o 16)"}
+            </p>
+          )}
+          {format === "groups_knockout" && (
+            <div className="form-grid">
+              <div className="form-field">
+                <label>Nº grupos</label>
+                <input
+                  type="number"
+                  className="input w-full"
+                  min={1}
+                  max={8}
+                  value={numGroups}
+                  onChange={(e) => setNumGroups(Number(e.target.value))}
+                />
+              </div>
+              <div className="form-field">
+                <label>Clasifican por grupo</label>
+                <input
+                  type="number"
+                  className="input w-full"
+                  min={1}
+                  max={8}
+                  value={qualify}
+                  onChange={(e) => setQualify(Number(e.target.value))}
+                />
+              </div>
+              {selected && (
+                <p className="form-hint" style={{ gridColumn: "1 / -1" }}>
+                  {selected.num_participants} jugadores →{" "}
+                  {selected.num_participants / numGroups} por grupo, {numGroups *
+                    qualify}{" "}
+                  clasificados (debe ser 2, 4, 8 o 16).
+                </p>
+              )}
             </div>
           )}
+          <label className="form-check">
+            <input
+              type="checkbox"
+              checked={doubleRound}
+              onChange={(e) => setDoubleRound(e.target.checked)}
+            />
+            Ida y vuelta en fase de grupos
+          </label>
+          {err && <p className="text-coral text-sm">{err}</p>}
         </div>
-      )}
-      <label className="flex items-center gap-2 text-sm">
-        <input
-          type="checkbox"
-          checked={doubleRound}
-          onChange={(e) => setDoubleRound(e.target.checked)}
-        />
-        Ida y vuelta en la fase de grupos
-      </label>
-      {err && <p className="text-coral text-sm">{err}</p>}
-      <div className="flex gap-2 justify-end">
-        <button className="btn btn-ghost" onClick={onCancel}>
-          Cancelar
-        </button>
-        <button
-          className="btn btn-primary"
-          onClick={submit}
-          disabled={!name || !sorteoId || saving}
-        >
-          {saving ? "Creando…" : "Crear"}
-        </button>
+        <div className="modal-panel__footer">
+          <button className="btn btn-ghost" onClick={onCancel}>
+            Cancelar
+          </button>
+          <button
+            className="btn btn-primary"
+            onClick={submit}
+            disabled={!name || !sorteoId || saving}
+          >
+            {saving ? "Creando…" : "Crear torneo"}
+          </button>
+        </div>
       </div>
     </div>
   );
 }
+
+// ---------- Helpers ----------
 
 export function statusLabel(s: string): string {
   return (
@@ -505,6 +705,17 @@ export function statusLabel(s: string): string {
       finished: "Finalizado",
     } as Record<string, string>
   )[s] ?? s;
+}
+
+function statusChip(s: string): string {
+  return (
+    {
+      draft: "",
+      groups: "totw",
+      knockout: "icon",
+      finished: "green",
+    } as Record<string, string>
+  )[s] ?? "";
 }
 
 export function formatLabel(f: string): string {

@@ -110,8 +110,22 @@ export default function TournamentPublic() {
       </div>
 
       {tab === "overview" && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="md:col-span-2 space-y-6">
+        <div className="space-y-6">
+          {t.format === "groups_knockout" ? (
+            <PlayersPanel
+              players={players}
+              byGroup={true}
+              standings={standings}
+              qualifyPerGroup={t.qualify_per_group}
+            />
+          ) : (
+            <StandingsTable
+              standings={standings.slice(0, 12)}
+              byGroup={false}
+              qualifyPerGroup={t.qualify_per_group}
+            />
+          )}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="card">
               <h2 className="font-semibold mb-3">Últimos resultados</h2>
               <RecentResults
@@ -124,26 +138,22 @@ export default function TournamentPublic() {
               <UpcomingMatches matches={matches} players={players} />
             </div>
           </div>
-          <div>
-            <StandingsTable
-              standings={standings.slice(0, 8)}
-              byGroup={t.format === "groups_knockout"}
-              qualifyPerGroup={t.qualify_per_group}
-            />
-          </div>
         </div>
       )}
 
       {tab === "players" && (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-          {players.map((p) => (
-            <div key={p.id} className="flex flex-col items-center gap-2">
-              <FutCard player={p} size="sm" />
-              {p.group_label && (
-                <span className="chip text-xs">Grupo {p.group_label}</span>
-              )}
-            </div>
-          ))}
+          {players.map((p) => {
+            const s = standings.find((x) => x.player_id === p.id) ?? null;
+            return (
+              <div key={p.id} className="flex flex-col items-center gap-2">
+                <FutCard player={p} size="sm" standing={s} flippable />
+                {p.group_label && (
+                  <span className="chip text-xs">Grupo {p.group_label}</span>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
 
@@ -177,6 +187,213 @@ export default function TournamentPublic() {
           onClose={() => setShowTradeModal(false)}
         />
       )}
+    </div>
+  );
+}
+
+function PlayersPanel({
+  players,
+  byGroup,
+  standings,
+  qualifyPerGroup,
+}: {
+  players: Player[];
+  byGroup: boolean;
+  standings: TournamentDetail["standings"];
+  qualifyPerGroup: number;
+}) {
+  if (!byGroup || players.every((p) => !p.group_label)) {
+    return (
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 justify-items-center">
+        {players.map((p) => (
+          <FutCard key={p.id} player={p} size="sm" />
+        ))}
+      </div>
+    );
+  }
+
+  const byLabel = new Map<string, Player[]>();
+  for (const p of players) {
+    const key = p.group_label ?? "—";
+    if (!byLabel.has(key)) byLabel.set(key, []);
+    byLabel.get(key)!.push(p);
+  }
+  const labels = [...byLabel.keys()].sort();
+  const standingsByGroup = new Map<
+    string,
+    TournamentDetail["standings"]
+  >();
+  for (const s of standings) {
+    const key = s.group_label ?? "—";
+    if (!standingsByGroup.has(key)) standingsByGroup.set(key, []);
+    standingsByGroup.get(key)!.push(s);
+  }
+
+  return (
+    <div className="group-grid">
+      {labels.map((label) => (
+        <GroupPanel
+          key={label}
+          label={label}
+          players={byLabel.get(label) ?? []}
+          standings={standingsByGroup.get(label) ?? []}
+          qualifyPerGroup={qualifyPerGroup}
+        />
+      ))}
+    </div>
+  );
+}
+
+function GroupPanel({
+  label,
+  players,
+  standings,
+  qualifyPerGroup,
+}: {
+  label: string;
+  players: Player[];
+  standings: TournamentDetail["standings"];
+  qualifyPerGroup: number;
+}) {
+  const hasStandings =
+    standings.length > 0 && standings.some((s) => s.pj > 0);
+  const ordered = hasStandings
+    ? [...players].sort((a, b) => {
+        const sa = standings.find((s) => s.player_id === a.id);
+        const sb = standings.find((s) => s.player_id === b.id);
+        return (sa?.group_position ?? 99) - (sb?.group_position ?? 99);
+      })
+    : [...players].sort((a, b) => b.team_ovr - a.team_ovr);
+
+  return (
+    <section className="group-panel">
+      <header className="group-panel__header">
+        <div className="group-panel__letter" aria-hidden>
+          {label}
+        </div>
+        <div className="group-panel__title">
+          <div className="fm-eyebrow">Group stage</div>
+          <h3 className="group-panel__name">Grupo {label}</h3>
+        </div>
+        <div className="group-panel__count">
+          {players.length}
+          <span>jug</span>
+        </div>
+      </header>
+
+      <ul
+        className={`group-panel__list ${
+          hasStandings ? "group-panel__list--stats" : "group-panel__list--preview"
+        }`}
+      >
+        {ordered.map((p, idx) => {
+          const s = standings.find((x) => x.player_id === p.id);
+          const pos = s?.group_position || 0;
+          const qualifies =
+            hasStandings &&
+            qualifyPerGroup > 0 &&
+            pos > 0 &&
+            pos <= qualifyPerGroup;
+          const photo = api.mediaUrl(p.photo_filename);
+          return (
+            <li
+              key={p.id}
+              className={`group-row ${qualifies ? "group-row--q" : ""} ${
+                hasStandings ? "group-row--stats" : "group-row--preview"
+              }`}
+            >
+              <span className="group-row__pos">
+                {hasStandings ? pos || "—" : idx + 1}
+              </span>
+              <div className="group-row__avatar">
+                {photo ? (
+                  <img src={photo} alt={p.display_name} />
+                ) : (
+                  <span>
+                    {p.display_name
+                      .split(/\s+/)
+                      .map((w) => w[0])
+                      .filter(Boolean)
+                      .slice(0, 2)
+                      .join("")
+                      .toUpperCase()}
+                  </span>
+                )}
+                <span className="group-row__ovr">{p.team_ovr}</span>
+              </div>
+              <div className="group-row__info">
+                <div className="group-row__name">{p.display_name}</div>
+                <div className="group-row__team">
+                  {p.team_type === "club" ? "🏆" : "🏳️"} {p.team_name}
+                </div>
+              </div>
+              {hasStandings && s ? (
+                <>
+                  <div className="group-row__stats">
+                    <Stat k="PJ" v={s.pj} />
+                    <Stat k="G" v={s.pg} className="group-row__stat--g" />
+                    <Stat k="E" v={s.pe} />
+                    <Stat k="P" v={s.pp} className="group-row__stat--p" />
+                    <Stat
+                      k="DIF"
+                      v={`${s.dif > 0 ? "+" : ""}${s.dif}`}
+                      className={
+                        s.dif > 0
+                          ? "group-row__stat--g"
+                          : s.dif < 0
+                            ? "group-row__stat--p"
+                            : ""
+                      }
+                    />
+                  </div>
+                  <div className="group-row__pts">
+                    <span>{s.pts}</span>
+                    <small>pts</small>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <span className="group-row__bombo">Bombo {p.bombo}</span>
+                  <span className="group-row__ovr-big">
+                    {p.team_ovr}
+                    <small>ovr</small>
+                  </span>
+                </>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+
+      {!hasStandings && (
+        <div className="group-panel__legend group-panel__legend--pending">
+          <span className="group-panel__dot group-panel__dot--pending" />
+          Sin partidos aún · ordenado por OVR
+        </div>
+      )}
+      {hasStandings && qualifyPerGroup > 0 && (
+        <div className="group-panel__legend">
+          <span className="group-panel__dot" /> Clasifican: top{" "}
+          {qualifyPerGroup}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function Stat({
+  k,
+  v,
+  className = "",
+}: {
+  k: string;
+  v: number | string;
+  className?: string;
+}) {
+  return (
+    <div className={`group-row__stat ${className}`}>
+      <span className="group-row__stat-v">{v}</span>
+      <span className="group-row__stat-k">{k}</span>
     </div>
   );
 }
