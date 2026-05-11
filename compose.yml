@@ -1,0 +1,17 @@
+services:
+  api:
+    image: localhost/futchallengue:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: futchallengue_api
+    env_file: .env
+    ports:
+      - "127.0.0.1:8110:8110"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8110/api/health"]
+      interval: 30s
+      start_period: 30s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
